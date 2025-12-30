@@ -1,0 +1,35 @@
+# Project Cursor Rules
+
+## UI Components
+
+This project uses **shadcn-ui** for all UI elements.
+
+### shadcn-ui Initialization
+
+If shadcn-ui is not initialized in the project, use the following command:
+
+```bash
+npx shadcn@latest init
+```
+
+### Adding shadcn-ui Components
+
+If a particular component is not installed, use the following command to add it:
+
+```bash
+npx shadcn@latest add [component-name]
+```
+
+**Example:** To install the button component:
+
+```bash
+npx shadcn@latest add button
+```
+
+### Component Usage Guidelines
+
+- Always use shadcn-ui components for UI elements instead of creating custom components from scratch
+- Check if a component is already installed before using it
+- If a required component is missing, install it using the `npx shadcn@latest add` command
+- Prefer shadcn-ui components for consistency and maintainability across the project
+
