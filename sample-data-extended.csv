@@ -1,0 +1,12 @@
+timestamp,sensor_id,value,location,transport_type
+2025-12-29T10:00:00.000Z,sensor_001,23.5,warehouse_a,truck
+2025-12-29T10:05:00.000Z,sensor_001,24.1,warehouse_a,truck
+2025-12-29T10:10:00.000Z,sensor_002,18.7,warehouse_b,ship
+2025-12-29T10:15:00.000Z,sensor_003,22.3,dock_1,rail
+2025-12-29T10:20:00.000Z,sensor_001,25.0,warehouse_a,truck
+2025-12-29T10:25:00.000Z,sensor_002,19.2,warehouse_b,ship
+2025-12-29T10:30:00.000Z,sensor_003,21.8,dock_1,rail
+2025-12-29T10:35:00.000Z,sensor_004,27.5,facility_c,air
+2025-12-29T10:40:00.000Z,sensor_001,24.8,warehouse_a,truck
+2025-12-29T10:45:00.000Z,sensor_002,20.1,warehouse_b,ship
+
