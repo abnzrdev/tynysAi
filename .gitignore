@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# documentation (setup guides)
+*_SETUP.md
+*_GUIDE.md
+*_SUMMARY.md
+*_REFERENCE.md
+*_REDIRECT.md
+ADMIN_*.md
+QUICK_START.md
