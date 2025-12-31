@@ -198,9 +198,23 @@ export function SensorChart({ data }: SensorChartProps) {
       )}
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter Controls</CardTitle>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+        <CardHeader className="border-b bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+          <CardTitle className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-5 w-5 text-blue-500"
+            >
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            Filter Controls
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -295,30 +309,44 @@ export function SensorChart({ data }: SensorChartProps) {
 
           {/* Statistics Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-            <div>
+            <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5">
               <p className="text-xs text-muted-foreground">Data Points</p>
-              <p className="text-lg font-bold">{stats.count}</p>
+              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.count}</p>
             </div>
-            <div>
+            <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-500/10 to-emerald-500/5">
               <p className="text-xs text-muted-foreground">Minimum</p>
-              <p className="text-lg font-bold">{stats.min}</p>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.min}</p>
             </div>
-            <div>
+            <div className="p-3 rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5">
               <p className="text-xs text-muted-foreground">Average</p>
-              <p className="text-lg font-bold">{stats.avg}</p>
+              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{stats.avg}</p>
             </div>
-            <div>
+            <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5">
               <p className="text-xs text-muted-foreground">Maximum</p>
-              <p className="text-lg font-bold">{stats.max}</p>
+              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{stats.max}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
+        <CardHeader className="border-b bg-gradient-to-r from-cyan-500/5 to-blue-500/5">
+          <CardTitle className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-5 w-5 text-cyan-500"
+            >
+              <line x1="12" x2="12" y1="20" y2="10" />
+              <line x1="18" x2="18" y1="20" y2="4" />
+              <line x1="6" x2="6" y1="20" y2="16" />
+            </svg>
             Sensor Data Visualization
             {selectedSensor !== "all" && (
               <span className="text-sm font-normal text-muted-foreground ml-2">
@@ -357,20 +385,24 @@ export function SensorChart({ data }: SensorChartProps) {
                 data={chartData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="timestamp"
                   angle={-45}
                   textAnchor="end"
                   height={100}
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  stroke="hsl(var(--border))"
                 />
                 <YAxis
                   label={{
                     value: "Sensor Value",
                     angle: -90,
                     position: "insideLeft",
+                    style: { fill: "hsl(var(--muted-foreground))" },
                   }}
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  stroke="hsl(var(--border))"
                 />
                 <Tooltip
                   contentStyle={{
@@ -384,10 +416,10 @@ export function SensorChart({ data }: SensorChartProps) {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  stroke="rgb(59, 130, 246)"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "rgb(59, 130, 246)", strokeWidth: 2, stroke: "white" }}
+                  activeDot={{ r: 6, fill: "rgb(59, 130, 246)" }}
                   name="Sensor Value"
                 />
               </LineChart>

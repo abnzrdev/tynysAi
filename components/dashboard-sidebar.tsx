@@ -1,0 +1,239 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { signOut } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import DarkModeToggle from "@/components/dark-mode-toggle";
+import {
+  LayoutDashboard,
+  Users,
+  Activity,
+  Database,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  BarChart3,
+  TrendingUp,
+  Shield,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type DashboardSidebarProps = {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    isAdmin: string;
+  };
+};
+
+export function DashboardSidebar({ user }: DashboardSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const isAdmin = user.isAdmin === "true";
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/' });
+  };
+
+  const navigationItems = [
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      href: "#overview",
+      color: "text-blue-500",
+    },
+    ...(isAdmin
+      ? [
+          {
+            name: "Users",
+            icon: Users,
+            href: "#users",
+            color: "text-purple-500",
+          },
+          {
+            name: "Contributors",
+            icon: TrendingUp,
+            href: "#contributors",
+            color: "text-emerald-500",
+          },
+        ]
+      : []),
+    {
+      name: "Analytics",
+      icon: BarChart3,
+      href: "#analytics",
+      color: "text-amber-500",
+    },
+    {
+      name: "Sensors",
+      icon: Activity,
+      href: "#sensors",
+      color: "text-cyan-500",
+    },
+    {
+      name: "Data",
+      icon: Database,
+      href: "#data",
+      color: "text-pink-500",
+    },
+  ];
+
+  const sidebarContent = (
+    <div className="flex h-full flex-col">
+      {/* Logo and Brand */}
+      <div className={cn("border-b border-border p-6", isCollapsed && "p-4")}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="text-lg font-bold">Tynys</span>
+                <span className="text-xs text-muted-foreground">
+                  IoT Platform
+                </span>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden lg:flex"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* User Profile */}
+      <div className={cn("border-b border-border p-6", isCollapsed && "p-4")}>
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 border-2 border-primary">
+            <AvatarImage
+              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+            />
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              {getUserInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium truncate">{user.name}</p>
+                {isAdmin && (
+                  <Badge variant="default" className="text-xs">
+                    Admin
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 p-4">
+        {navigationItems.map((item) => (
+          <Link
+            key={item.name}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              isCollapsed && "justify-center"
+            )}
+          >
+            <item.icon className={cn("h-5 w-5 flex-shrink-0", item.color)} />
+            {!isCollapsed && <span>{item.name}</span>}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Bottom Actions */}
+      <div className="border-t border-border p-4 space-y-2">
+        <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
+          {!isCollapsed && (
+            <span className="text-sm font-medium flex-1">Theme</span>
+          )}
+          <DarkModeToggle />
+        </div>
+        <button
+          onClick={handleSignOut}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 w-full cursor-pointer",
+            isCollapsed && "justify-center"
+          )}
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          {!isCollapsed && <span>Sign Out</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 left-4 z-50 lg:hidden"
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+      >
+        {isMobileOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <Menu className="h-6 w-6" />
+        )}
+      </Button>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:hidden",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden transform bg-card border-r border-border transition-all duration-300 lg:block",
+          isCollapsed ? "w-20" : "w-64"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
+  );
+}
+
