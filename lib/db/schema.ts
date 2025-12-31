@@ -2,9 +2,12 @@ import { pgTable, serial, text, timestamp, jsonb, integer, doublePrecision } fro
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  clerkId: text('clerk_id').notNull().unique(),
+  clerkId: text('clerk_id').unique(), // Made optional for NextAuth migration
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  password: text('password'), // Password hash for email authentication
+  isAdmin: text('is_admin').default('false').notNull(), // Admin role flag
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export const devices = pgTable('devices', {
