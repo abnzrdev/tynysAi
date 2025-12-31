@@ -5,10 +5,28 @@ This is a [Next.js](https://nextjs.org) IoT data visualization platform with rea
 ## Features
 
 ### 🔐 Authentication
-- Secure authentication using Clerk
+- Secure authentication using NextAuth.js
+- Email/password authentication
+- Role-based access control (Admin/User)
 - User management and session handling
 
-### 📊 Real-Time Dashboard
+### 🛡️ Admin Dashboard
+- **System-wide monitoring** with comprehensive metrics:
+  - Total users and new signups tracking
+  - System-wide data points and sensor readings
+  - Active sensor monitoring
+- **User Management**:
+  - View all registered users in interactive table
+  - Role management (Admin/User)
+  - User activity tracking
+- **Advanced Analytics**:
+  - Real-time sensor charts
+  - Sensor statistics (min, max, avg)
+  - Top sensor distribution
+  - Recent activity feed from all users
+- **Access Control**: Admin-only access with secure authentication
+
+### 📊 User Dashboard
 - Live sensor value display with animated "Real-Time" badge
 - Key metrics cards showing:
   - Total data points
@@ -51,7 +69,7 @@ timestamp,sensor_id,value,location,transport_type
 ### Prerequisites
 - Node.js 18+ 
 - PostgreSQL database
-- Clerk account for authentication
+- OAuth provider credentials (Google and/or GitHub)
 
 ### Installation
 
@@ -68,15 +86,32 @@ npm install
 
 3. Set up environment variables (create a `.env.local` file):
 ```env
+# Database
 DATABASE_URL=your_postgres_connection_string
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# OAuth Providers
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_ID=your_github_client_id
+GITHUB_SECRET=your_github_client_secret
+
+# IoT Device Authentication
 IOT_DEVICE_SECRET=your_iot_device_secret
 ```
 
+See `MIGRATION_GUIDE.md` for detailed instructions on setting up OAuth providers.
+
 4. Run database migrations:
 ```bash
+# Push schema changes
 npx drizzle-kit push
+
+# Or run the migration SQL manually
+psql $DATABASE_URL < drizzle/0003_make_clerkid_optional.sql
 ```
 
 5. Start the development server:
@@ -85,6 +120,21 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
+
+## Admin Dashboard Setup
+
+To access the admin dashboard with full system monitoring and user management:
+
+1. Create a user account through the sign-up page
+2. Set admin privileges for your account:
+
+```bash
+npm run set:admin your-email@example.com
+```
+
+3. Sign in and navigate to `/dashboard` to access the admin dashboard
+
+For detailed admin dashboard documentation, see `ADMIN_DASHBOARD.md`.
 
 ## Data Ingestion
 
