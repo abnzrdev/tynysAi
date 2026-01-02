@@ -1,7 +1,8 @@
 {
   "nav": {
     "getStarted": "Get Started",
-    "learnArchitecture": "Learn Architecture"
+    "learnArchitecture": "Learn Architecture",
+    "goToDashboard": "Go to Dashboard"
   },
   "hero": {
     "badge": "IoT Air Quality Monitoring",
@@ -138,6 +139,14 @@
     "accountCreatedSuccess": "Account created successfully! Redirecting to sign in...",
     "failedToCreate": "Failed to create account. Please try again.",
     "errorOccurred": "An error occurred. Please try again."
+  },
+  "navbar": {
+    "login": "Login",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "menu": "Menu",
+    "language": "Language",
+    "theme": "Theme"
   }
 }
 

@@ -1,7 +1,8 @@
 {
   "nav": {
     "getStarted": "Бастау",
-    "learnArchitecture": "Сәулетті үйрену"
+    "learnArchitecture": "Сәулетті үйрену",
+    "goToDashboard": "Басқару панеліне өту"
   },
   "hero": {
     "badge": "IoT ауа сапасын бақылау",
@@ -138,6 +139,14 @@
     "accountCreatedSuccess": "Тіркелгі сәтті жасалды! Кіруге бағыттау...",
     "failedToCreate": "Тіркелгі жасау сәтсіз аяқталды. Қайталап көріңіз.",
     "errorOccurred": "Қате пайда болды. Қайталап көріңіз."
+  },
+  "navbar": {
+    "login": "Кіру",
+    "signUp": "Тіркелу",
+    "signOut": "Шығу",
+    "menu": "Мәзір",
+    "language": "Тіл",
+    "theme": "Тақырып"
   }
 }
 

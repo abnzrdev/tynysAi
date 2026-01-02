@@ -1,7 +1,8 @@
 {
   "nav": {
     "getStarted": "Начать",
-    "learnArchitecture": "Узнать архитектуру"
+    "learnArchitecture": "Узнать архитектуру",
+    "goToDashboard": "Перейти к панели"
   },
   "hero": {
     "badge": "Мониторинг качества воздуха IoT",
@@ -138,6 +139,14 @@
     "accountCreatedSuccess": "Аккаунт успешно создан! Перенаправление на вход...",
     "failedToCreate": "Не удалось создать аккаунт. Попробуйте снова.",
     "errorOccurred": "Произошла ошибка. Попробуйте снова."
+  },
+  "navbar": {
+    "login": "Вход",
+    "signUp": "Регистрация",
+    "signOut": "Выйти",
+    "menu": "Меню",
+    "language": "Язык",
+    "theme": "Тема"
   }
 }
 
