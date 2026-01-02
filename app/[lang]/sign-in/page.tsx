@@ -19,7 +19,23 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 
 // Client-side translations
-const translations: Record<string, any> = {
+type SignInTranslations = {
+  welcomeBack: string;
+  signInToDashboard: string;
+  emailAddress: string;
+  emailPlaceholder: string;
+  password: string;
+  passwordPlaceholder: string;
+  signIn: string;
+  signingIn: string;
+  newToTynys: string;
+  createAccount: string;
+  termsAgreement: string;
+  invalidCredentials: string;
+  errorOccurred: string;
+};
+
+const translations: Record<string, SignInTranslations> = {
   en: {
     welcomeBack: "Welcome Back",
     signInToDashboard: "Sign in to access your IoT dashboard",
@@ -96,7 +112,7 @@ export default function SignInPage() {
         router.push(`/${lang}/dashboard`);
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError(t.errorOccurred);
     } finally {
       setIsLoading(false);

@@ -18,7 +18,30 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 
 // Client-side translations
-const translations: Record<string, any> = {
+type SignUpTranslations = {
+  createAccount: string;
+  getStarted: string;
+  fullName: string;
+  namePlaceholder: string;
+  emailAddress: string;
+  emailPlaceholder: string;
+  password: string;
+  passwordPlaceholder: string;
+  confirmPassword: string;
+  minimumChars: string;
+  creatingAccount: string;
+  accountCreated: string;
+  alreadyHaveAccount: string;
+  signIn: string;
+  termsAgreement: string;
+  passwordsDoNotMatch: string;
+  passwordTooShort: string;
+  accountCreatedSuccess: string;
+  failedToCreate: string;
+  errorOccurred: string;
+};
+
+const translations: Record<string, SignUpTranslations> = {
   en: {
     createAccount: "Create Account",
     getStarted: "Get started with your IoT monitoring dashboard",
@@ -143,7 +166,7 @@ export default function SignUpPage() {
           router.push(`/${lang}/sign-in`);
         }, 2000);
       }
-    } catch (err) {
+    } catch {
       setError(t.errorOccurred);
     } finally {
       setIsLoading(false);

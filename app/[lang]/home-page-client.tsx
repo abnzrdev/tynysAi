@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { type Locale } from '@/lib/i18n/config';
 import { AirVisualization } from '@/components/air-visualization';
+import type { Session } from 'next-auth';
 
 // Mock data for the live dashboard simulation
 const generateMockData = () => {
@@ -36,14 +37,54 @@ const currentMetrics = {
   humidity: 65, // High - above 60% to show badge
 };
 
+// Types for components
+type Dictionary = {
+  nav: Record<string, string>;
+  hero: Record<string, string>;
+  metrics: Record<string, string>;
+  dashboard: {
+    low: string;
+    high: string;
+    [key: string]: string;
+  };
+  architecture: Record<string, string>;
+  features: Record<string, string>;
+  cta: Record<string, string>;
+  [key: string]: Record<string, string>;
+};
+
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+type StatCardProps = {
+  title: string;
+  value: number;
+  unit: string;
+  icon: IconComponent;
+  status?: string | null;
+};
+
+type ArchitectureLayerProps = {
+  number: number;
+  title: string;
+  description: string;
+  icon: IconComponent;
+  delay: number;
+};
+
+type FeatureCardProps = {
+  icon: IconComponent;
+  title: string;
+  description: string;
+};
+
 // Helper functions to determine status
-const getTemperatureStatus = (temp: number, dict: any) => {
+const getTemperatureStatus = (temp: number, dict: Dictionary) => {
   if (temp < 18) return dict.dashboard.low;
   if (temp > 26) return dict.dashboard.high;
   return null; // Comfortable range, no badge
 };
 
-const getHumidityStatus = (humidity: number, dict: any) => {
+const getHumidityStatus = (humidity: number, dict: Dictionary) => {
   if (humidity < 30) return dict.dashboard.low;
   if (humidity > 60) return dict.dashboard.high;
   return null; // Comfortable range, no badge
@@ -66,7 +107,7 @@ const staggerContainer = {
 };
 
 // Internal components
-const StatCard = ({ title, value, unit, icon: Icon, status }: any) => (
+const StatCard = ({ title, value, unit, icon: Icon, status }: StatCardProps) => (
   <Card className="border-border hover:shadow-lg transition-shadow duration-300">
     <CardHeader className="flex flex-row items-center justify-between pb-2">
       <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -98,7 +139,7 @@ const StatCard = ({ title, value, unit, icon: Icon, status }: any) => (
   </Card>
 );
 
-const ArchitectureLayer = ({ number, title, description, icon: Icon, delay }: any) => (
+const ArchitectureLayer = ({ number, title, description, icon: Icon, delay }: ArchitectureLayerProps) => (
   <motion.div
     variants={fadeInUp}
     initial="hidden"
@@ -121,7 +162,7 @@ const ArchitectureLayer = ({ number, title, description, icon: Icon, delay }: an
   </motion.div>
 );
 
-const FeatureCard = ({ icon: Icon, title, description }: any) => (
+const FeatureCard = ({ icon: Icon, title, description }: FeatureCardProps) => (
   <motion.div
     variants={fadeInUp}
     className="p-6 rounded-2xl bg-card border border-border hover:border-teal-500 dark:hover:border-teal-400 hover:shadow-xl transition-all duration-300"
@@ -134,7 +175,7 @@ const FeatureCard = ({ icon: Icon, title, description }: any) => (
   </motion.div>
 );
 
-export function HomePage({ dict, lang }: { dict: any; lang: Locale }) {
+export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Locale; session: Session | null }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
       {/* Hero Section */}
@@ -167,22 +208,45 @@ export function HomePage({ dict, lang }: { dict: any; lang: Locale }) {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link href={`/${lang}/sign-in`}>
-                <Button size="lg" className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
-                  {dict.nav.getStarted}
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-2 border-border hover:border-teal-600 dark:hover:border-teal-400 px-8 py-6 text-lg transition-all duration-300"
-                onClick={() => {
-                  document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                {dict.nav.learnArchitecture}
-              </Button>
+              {session && session.user ? (
+                <>
+                  <Link href={`/${lang}/dashboard`}>
+                    <Button size="lg" className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                      {dict.nav.goToDashboard}
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-2 border-border hover:border-teal-600 dark:hover:border-teal-400 px-8 py-6 text-lg transition-all duration-300"
+                    onClick={() => {
+                      document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {dict.nav.learnArchitecture}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href={`/${lang}/sign-in`}>
+                    <Button size="lg" className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                      {dict.nav.getStarted}
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-2 border-border hover:border-teal-600 dark:hover:border-teal-400 px-8 py-6 text-lg transition-all duration-300"
+                    onClick={() => {
+                      document.getElementById('architecture')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {dict.nav.learnArchitecture}
+                  </Button>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -506,12 +570,21 @@ export function HomePage({ dict, lang }: { dict: any; lang: Locale }) {
           <p className="text-xl text-teal-50 mb-8">
             {dict.cta.description}
           </p>
-          <Link href={`/${lang}/sign-in`}>
-            <Button size="lg" className="bg-card text-teal-600 dark:text-teal-400 border border-transparent hover:border-teal-500 dark:hover:border-teal-400 px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
-              {dict.cta.button}
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
+          {session && session.user ? (
+            <Link href={`/${lang}/dashboard`}>
+              <Button size="lg" className="bg-card text-teal-600 dark:text-teal-400 border border-transparent hover:border-teal-500 dark:hover:border-teal-400 px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+                {dict.nav.goToDashboard}
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+          ) : (
+            <Link href={`/${lang}/sign-in`}>
+              <Button size="lg" className="bg-card text-teal-600 dark:text-teal-400 border border-transparent hover:border-teal-500 dark:hover:border-teal-400 px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+                {dict.cta.button}
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
+          )}
         </motion.div>
       </section>
 

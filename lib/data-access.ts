@@ -14,7 +14,11 @@ export async function createUser(userData: {
   clerkId?: string; // Optional for backward compatibility
 }) {
   try {
-    const insertData: any = {
+    const insertData: {
+      name: string;
+      email: string;
+      clerkId?: string;
+    } = {
       name: userData.name,
       email: userData.email,
     };

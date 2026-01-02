@@ -12,7 +12,6 @@ import {
   Users,
   Activity,
   Database,
-  Settings,
   LogOut,
   Menu,
   X,
