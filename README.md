@@ -158,60 +158,6 @@ timestamp,sensor_id,value,location,transport_type
 
 ---
 
-## 🗄️ Database Schema
-
-### Tables
-
-#### `users`
-Stores user account information with authentication credentials.
-```typescript
-{
-  id: serial (Primary Key)
-  clerkId: text (Unique, Optional - for legacy support)
-  name: text (Required)
-  email: text (Unique, Required)
-  password: text (Hashed password)
-  isAdmin: text (Default: 'false')
-  createdAt: timestamp (Default: now())
-}
-```
-
-#### `sensor_readings`
-Time-series sensor data with optional metadata.
-```typescript
-{
-  id: serial (Primary Key)
-  timestamp: timestamp (Required - ISO-8601)
-  sensorId: text (Required)
-  value: double precision (Required)
-  location: text (Optional)
-  transportType: text (Optional)
-  ingestedAt: timestamp (Default: now())
-}
-```
-
-#### `iot_data`
-Legacy table for JSON payload storage (user-specific data).
-```typescript
-{
-  id: serial (Primary Key)
-  timestamp: timestamp (Default: now())
-  dataPayload: jsonb (Required)
-  userId: integer (Foreign Key → users.id)
-}
-```
-
-#### `devices`
-Device registry for IoT unit management (prepared for future use).
-```typescript
-{
-  id: serial (Primary Key)
-  serial: text (Unique, Required)
-  type: text (Required)
-}
-```
-
----
 
 ## 🚀 Getting Started
 
@@ -237,27 +183,6 @@ npm install
 ```
 
 3. **Set up environment variables**
-
-Create a `.env.local` file in the root directory:
-
-```env
-# Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/tynys
-DB_URL=postgresql://username:password@localhost:5432/tynys
-
-# NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-key-here-generate-with-openssl
-
-# IoT Device Authentication
-IOT_DEVICE_SECRET=your-iot-device-secret-token
-
-# Optional: OAuth Providers (for future use)
-# GOOGLE_CLIENT_ID=your_google_client_id
-# GOOGLE_CLIENT_SECRET=your_google_client_secret
-# GITHUB_ID=your_github_client_id
-# GITHUB_SECRET=your_github_client_secret
-```
 
 **Generate NEXTAUTH_SECRET**:
 ```bash
@@ -524,48 +449,6 @@ export const i18n = {
 ```
 
 4. Add language option to the language switcher component
-
----
-
-## 🗺️ Roadmap & Future Development
-
-### Phase 1: Hardware Integration (Planned)
-- [ ] Raspberry Pi Zero 2W firmware development
-- [ ] ZPHS01B sensor integration (CO₂, PM2.5, PM10, Temperature, Humidity)
-- [ ] Real-time MQTT telemetry implementation
-- [ ] Edge data processing and filtering
-- [ ] Offline buffer mechanism with automatic sync
-
-### Phase 2: Real-Time Communication (Planned)
-- [ ] MQTT broker setup (Eclipse Mosquitto)
-- [ ] WebSocket support for real-time dashboard updates
-- [ ] Device fleet management interface
-- [ ] OTA (Over-The-Air) firmware updates
-- [ ] Device health monitoring
-
-### Phase 3: Machine Learning & Analytics (Planned)
-- [ ] Anomaly detection models (XGBoost, Random Forest)
-- [ ] Air quality classification (Good, Moderate, Poor, Hazardous)
-- [ ] Predictive maintenance for sensors
-- [ ] Route optimization based on air quality
-- [ ] Edge ML deployment on Raspberry Pi
-
-### Phase 4: Advanced Features (Planned)
-- [ ] TimescaleDB integration for optimized time-series queries
-- [ ] LoRaWAN support for areas without Wi-Fi
-- [ ] Public API for third-party integrations
-- [ ] Mobile application (React Native)
-- [ ] Real-time alerting system (SMS, Email, Push notifications)
-- [ ] Export functionality (CSV, PDF reports)
-- [ ] Advanced data comparison (route-to-route, vehicle-to-vehicle)
-
-### Phase 5: Scale & Production (Planned)
-- [ ] Docker containerization
-- [ ] Kubernetes orchestration
-- [ ] Load balancing for high-traffic scenarios
-- [ ] CDN integration for global access
-- [ ] Multi-tenant architecture
-- [ ] Compliance certifications (GDPR, ISO)
 
 ---
 
@@ -943,8 +826,7 @@ copies or substantial portions of the Software.
 ## 👥 Research & Development
 
 **Developed by**: Farabi AGI Center  
-**Website**: [https://tynys.kz](https://tynys.kz)  
-**Email**: contact@tynys.kz
+**Website**: [https://tynys.kz](https://tynysai.kz)  
 
 ### About Farabi AGI Center
 
@@ -960,8 +842,6 @@ The Farabi AGI Center is dedicated to advancing artificial intelligence and IoT 
 ---
 
 <div align="center">
-
-**Built with ❤️ for cleaner, safer public transportation**
 
 [⬆ Back to Top](#tynys-ai-intelligent-platform-for-real-time-air-quality-monitoring)
 
