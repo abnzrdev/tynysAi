@@ -101,15 +101,17 @@ export async function getUserData(userId: number) {
 }
 
 /**
- * Retrieves recent sensor readings with optional limit
+ * Retrieves recent sensor readings for a specific user with optional limit
+ * @param userId - The ID of the user to filter readings for
  * @param limit - Maximum number of readings to retrieve (default: 100)
- * @returns Array of sensor readings
+ * @returns Array of sensor readings for the specified user
  */
-export async function getRecentSensorReadings(limit: number = 100) {
+export async function getRecentSensorReadings(userId: number, limit: number = 100) {
   try {
     const readings = await db
       .select()
       .from(sensorReadings)
+      .where(eq(sensorReadings.userId, userId))
       .orderBy(desc(sensorReadings.ingestedAt))
       .limit(limit);
 
@@ -124,9 +126,10 @@ export async function getRecentSensorReadings(limit: number = 100) {
  * Batch inserts sensor readings into the database
  * Optimized for handling large payloads from offline devices
  * @param readings - Array of sensor readings to insert
+ * @param userId - Optional user ID to associate readings with (for data isolation)
  * @returns Number of rows inserted
  */
-export async function batchInsertSensorReadings(readings: SensorReading[]) {
+export async function batchInsertSensorReadings(readings: SensorReading[], userId?: number) {
   if (readings.length === 0) {
     return 0;
   }
@@ -139,6 +142,7 @@ export async function batchInsertSensorReadings(readings: SensorReading[]) {
       value: reading.value,
       location: reading.location || null,
       transportType: reading.transport_type || null,
+      userId: userId || null, // Associate with user if provided
     }));
 
     // Perform batch insert - Drizzle handles this efficiently
