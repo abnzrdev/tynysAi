@@ -29,6 +29,13 @@
       "when": 1767082602129,
       "tag": "0003_new_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1735862400000,
+      "tag": "0006_add_user_id_to_sensor_readings",
+      "breakpoints": true
     }
   ]
 }

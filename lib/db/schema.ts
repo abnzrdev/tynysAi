@@ -32,6 +32,7 @@ export const sensorReadings = pgTable('sensor_readings', {
   value: doublePrecision('value').notNull(),
   location: text('location'),
   transportType: text('transport_type'),
+  userId: integer('user_id').references(() => users.id), // User ownership for data isolation
   ingestedAt: timestamp('ingested_at').notNull().defaultNow(),
 });
 
