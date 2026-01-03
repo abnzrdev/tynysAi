@@ -49,10 +49,10 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
     );
   }
 
-  // Fetch user's IoT data and sensor readings
+  // Fetch user's IoT data and sensor readings (filtered by userId for data isolation)
   const [iotDataRecords, sensorReadings] = await Promise.all([
     getUserData(user.id),
-    getRecentSensorReadings(500), // Fetch more data for better chart visualization
+    getRecentSensorReadings(user.id, 500), // Fetch more data for better chart visualization
   ]);
 
   // Calculate metrics from the data

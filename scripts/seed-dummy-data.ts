@@ -106,6 +106,7 @@ async function seedDummyData() {
           value: Math.round(value * 100) / 100, // Round to 2 decimal places
           location: locations[Math.floor(Math.random() * locations.length)],
           transportType: transportTypes[Math.floor(Math.random() * transportTypes.length)],
+          userId: testUser.id, // Associate with test user for data isolation
         });
       }
     }
