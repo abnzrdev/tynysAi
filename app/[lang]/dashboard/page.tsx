@@ -11,10 +11,17 @@ import {
   getUserData,
   getRecentSensorReadings,
 } from "@/lib/data-access";
+import dynamic from "next/dynamic";
 import { SensorChart } from "@/components/sensor-chart";
 import { getSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
+
+// Leaflet relies on the browser `window`, so load the map component on the client only.
+const AirQualityMap = dynamic(
+  () => import("@/components/air-quality-map").then((mod) => mod.AirQualityMap),
+  { ssr: false, loading: () => <div className="h-[420px] rounded-lg border p-4 text-sm text-muted-foreground">Loading map...</div> }
+);
 
 export default async function DashboardPage({ params }: { params: { lang: Locale } }) {
   const dict = await getDictionary(params.lang);
@@ -203,6 +210,25 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        {/* Geospatial Overview */}
+        <section>
+          <h2 className="mb-4 text-2xl font-semibold">{dict.dashboardPage.geoOverview}</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>{dict.dashboardPage.geoOverview}</CardTitle>
+              <CardDescription>
+                {dict.dashboardPage.geoDescription}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AirQualityMap
+                readings={sensorReadings}
+                emptyStateText={dict.dashboardPage.noGeocodedData}
+              />
+            </CardContent>
+          </Card>
         </section>
 
         {/* Historical Analytics Section */}
