@@ -1,7 +1,7 @@
 # Tynys AI
-<div align="center">
-  ![Tynys AI](tynys-logo.png)
-</div>
+<p align="center">
+  <img src="./tynys-logo.png" alt="Tynys AI logo" width="240" />
+</p>
 
 Real-time indoor air quality (IAQ) monitoring for public transport. Ingest CSV sensor streams, store time-series data, and visualize per-user and fleet-wide insights with RBAC and multilingual UI. Developed by the Farabi AGI Center research lab.
 
