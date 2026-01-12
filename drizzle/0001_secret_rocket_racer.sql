@@ -1,4 +1,4 @@
-CREATE TABLE "sensor_readings" (
+CREATE TABLE IF NOT EXISTS "sensor_readings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"timestamp" timestamp NOT NULL,
 	"sensor_id" text NOT NULL,
