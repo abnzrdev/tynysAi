@@ -148,7 +148,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     return filteredReadings.slice(0, 10).map((reading) => ({
       id: reading.id,
       sensorId: reading.sensorId,
-      timestamp: (reading as any).ingestedAt ?? reading.timestamp,
+      timestamp: reading.ingestedAt ?? reading.timestamp,
     }));
   }, [filteredReadings]);
 

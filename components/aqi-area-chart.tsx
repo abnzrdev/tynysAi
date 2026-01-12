@@ -10,7 +10,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  type TooltipProps,
+  type TooltipProps as RechartsTooltipProps,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,18 @@ const formatTimestamp = (value: string) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
-function AqiTooltip({ active, payload, label }: TooltipProps<number, string>) {
+type AqiTooltipPayload = {
+  value?: number;
+  payload?: SensorReading;
+};
+
+type AqiTooltipProps = RechartsTooltipProps<number, string> & {
+  payload?: AqiTooltipPayload[];
+  label?: string | number;
+  active?: boolean;
+};
+
+function AqiTooltip({ active, payload, label }: AqiTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
 
   const point = payload[0];

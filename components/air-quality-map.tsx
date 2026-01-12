@@ -28,11 +28,6 @@ const AQI_BREAKPOINTS = [
 
 const DEFAULT_CENTER: LatLngTuple = [37.0902, -95.7129];
 
-function getColorForValue(value: number): string {
-  const match = AQI_BREAKPOINTS.find((bp) => value <= bp.limit);
-  return match ? match.color : "#6b7280";
-}
-
 function parseLocation(location?: string | null): LatLngTuple | null {
   if (!location) return null;
   const [latStr, lngStr] = location.split(",").map((part) => part.trim());
@@ -54,6 +49,21 @@ type AggregatedPoint = {
   lastTimestamp: string;
   sensorIds: string[];
 };
+
+type MarkerCluster = {
+  getAllChildMarkers: () => L.Marker[];
+};
+
+type MarkerClusterGroup = L.LayerGroup & {
+  addLayer: (layer: L.Layer) => MarkerClusterGroup;
+};
+
+type MarkerClusterGroupFactory = (options?: {
+  iconCreateFunction?: (cluster: MarkerCluster) => L.DivIcon;
+  chunkedLoading?: boolean;
+  showCoverageOnHover?: boolean;
+  spiderfyOnMaxZoom?: boolean;
+}) => MarkerClusterGroup;
 
 function aggregatePoints(readings: MapReading[]): AggregatedPoint[] {
   const map = new Map<string, AggregatedPoint>();
@@ -108,19 +118,19 @@ function createPointIcon(value: number) {
     </div>
   `;
 
-  // attach aqi value on the icon options so cluster can compute averages
-  return L.divIcon({
+  const iconOptions: L.DivIconOptions & { aqiValue: number } = {
     className: "aqi-point-icon",
     html,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14],
-    // @ts-ignore - we intentionally add custom field
     aqiValue: value,
-  } as any);
+  };
+
+  return L.divIcon(iconOptions);
 }
 
-function createClusterIcon(cluster: any) {
+function createClusterIcon(cluster: MarkerCluster) {
   const childMarkers = cluster.getAllChildMarkers() as L.Marker[];
   const values = childMarkers.map((m) => {
     const opts = (m.options.icon?.options ?? {}) as { aqiValue?: number };
@@ -138,7 +148,14 @@ function createClusterIcon(cluster: any) {
     </div>
   `;
 
-  return L.divIcon({ className: "aqi-cluster-icon", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] } as any);
+  const iconOptions: L.DivIconOptions = {
+    className: "aqi-cluster-icon",
+    html,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  };
+
+  return L.divIcon(iconOptions);
 }
 
 function FitToMarkers({ points }: { points: AggregatedPoint[] }) {
@@ -235,16 +252,18 @@ function ClusterLayer({ points }: { points: AggregatedPoint[] }) {
   useEffect(() => {
     if (!map) return;
 
-    // @ts-ignore - markerClusterGroup is added to L by the plugin
-    const clusterGroup = (L as any).markerClusterGroup({
-      iconCreateFunction: (cluster: any) => createClusterIcon(cluster),
+    const markerClusterGroup = (L as typeof L & { markerClusterGroup?: MarkerClusterGroupFactory }).markerClusterGroup;
+    if (!markerClusterGroup) return;
+
+    const clusterGroup = markerClusterGroup({
+      iconCreateFunction: (cluster) => createClusterIcon(cluster),
       chunkedLoading: true,
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
     });
 
     points.forEach((point) => {
-      const marker = L.marker(point.coords as any, { icon: createPointIcon(point.avgValue) } as any);
+      const marker = L.marker(point.coords, { icon: createPointIcon(point.avgValue) });
 
       const tooltipHtml = `
         <div class="space-y-1 text-xs">

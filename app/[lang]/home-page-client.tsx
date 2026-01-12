@@ -92,7 +92,7 @@ const FeatureCard = ({ icon: Icon, title, description }: FeatureCardProps) => (
   </motion.div>
 );
 
-export function HomePage({ dict, lang: _lang, session: _session }: { dict: Dictionary; lang: Locale; session: Session | null }) {
+export function HomePage({ dict }: { dict: Dictionary; lang: Locale; session: Session | null }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {

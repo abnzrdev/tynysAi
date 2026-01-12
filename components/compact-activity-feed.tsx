@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type ActivityItem = {
   id: string | number;
   sensorId: string;
-  timestamp: string | Date;
+  timestamp: string | Date | null;
 };
 
 type CompactActivityFeedProps = {
@@ -13,7 +13,9 @@ type CompactActivityFeedProps = {
   className?: string;
 };
 
-const formatRelativeTime = (timestamp: string | Date) => {
+const formatRelativeTime = (timestamp: string | Date | null) => {
+  if (!timestamp) return "just now";
+
   const date = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
   const now = Date.now();
   const diffInSeconds = Math.max(0, Math.floor((now - date.getTime()) / 1000));

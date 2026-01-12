@@ -21,7 +21,7 @@ interface SensorReading {
   value: number;
   location: string | null;
   transportType: string | null;
-  ingestedAt: Date;
+  ingestedAt: string | Date;
 }
 
 interface SensorChartProps {

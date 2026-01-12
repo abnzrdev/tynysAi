@@ -58,6 +58,11 @@ type SidebarItem = {
 
 const SECTION_ANCHORS = ["map-section", "stats-section"];
 
+type SidebarCSSVars = CSSProperties & {
+  "--sidebar-width"?: string;
+  "--sidebar-padding"?: string;
+};
+
 export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -276,7 +281,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
     </div>
   );
 
-  const sidebarStyles = useMemo<CSSProperties>(() => {
+  const sidebarStyles = useMemo<SidebarCSSVars>(() => {
     return {
       "--sidebar-width": isCollapsed ? "80px" : "256px",
       "--sidebar-padding": isCollapsed ? "1.5rem" : "2.5rem",
