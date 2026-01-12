@@ -99,7 +99,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
-              <Shield className="h-6 w-6 text-white" />
+              <Shield className="h-6 w-6 text-primary-foreground" />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
@@ -128,7 +128,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
             <AvatarImage
               src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
             />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-primary-foreground">
               {getUserInitials(user.name)}
             </AvatarFallback>
           </Avatar>
@@ -208,7 +208,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       {/* Mobile Sidebar Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -216,7 +216,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       {/* Mobile Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:hidden",
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -226,7 +226,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden transform bg-card border-r border-border transition-all duration-300 lg:block",
+          "fixed inset-y-0 left-0 z-50 hidden transform bg-card border-r border-border transition-all duration-300 lg:block",
           isCollapsed ? "w-20" : "w-64"
         )}
       >

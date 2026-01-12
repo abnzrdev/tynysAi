@@ -46,7 +46,7 @@ export function LanguageSwitcher() {
         <SelectTrigger className="w-[140px]">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-50">
           {i18n.locales.map((locale) => (
             <SelectItem key={locale} value={locale}>
               {languageNames[locale]}

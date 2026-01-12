@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
+import { AuthPageShell } from "@/components/auth-page-shell";
 
 // Client-side translations
 type SignInTranslations = {
@@ -120,14 +121,8 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-200/20 dark:bg-teal-900/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200/20 dark:bg-blue-900/20 rounded-full blur-3xl" />
-      </div>
-
-      <Card className="w-full max-w-md border-border shadow-xl">
+    <AuthPageShell>
+      <Card className="w-full max-w-md border border-white/20 bg-background/60 text-foreground shadow-2xl backdrop-blur-md">
         <CardHeader className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Image 
@@ -170,7 +165,7 @@ export default function SignInPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10"
+                  className="pl-10 placeholder:text-muted-foreground"
                   disabled={isLoading}
                 />
               </div>
@@ -189,7 +184,7 @@ export default function SignInPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10"
+                  className="pl-10 placeholder:text-muted-foreground"
                   disabled={isLoading}
                 />
               </div>
@@ -197,12 +192,12 @@ export default function SignInPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
               disabled={isLoading}
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                   {t.signingIn}
                 </span>
               ) : (
@@ -237,7 +232,7 @@ export default function SignInPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </AuthPageShell>
   );
 }
 

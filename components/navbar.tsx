@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import DarkModeToggle from '@/components/dark-mode-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -64,10 +64,16 @@ const translations: Record<string, NavbarTranslations> = {
   }
 };
 
-export function Navbar() {
+type NavbarProps = {
+  variant?: "default" | "transparent";
+  forceSolid?: boolean;
+};
+
+export function Navbar({ variant = "default", forceSolid }: NavbarProps) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   // Extract current locale from pathname or use default
   const currentLocale = pathname.split('/')[1];
@@ -92,9 +98,33 @@ export function Navbar() {
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
   };
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      if (typeof window === "undefined") return;
+      const viewportHeight = window.innerHeight || 0;
+      const offset = variant === "transparent" ? Math.max(viewportHeight - 64, 120) : 50;
+      setIsScrolled(window.scrollY > offset);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [variant]);
+
+  const navBase = "fixed top-0 z-50 w-full transition-all duration-300";
+  const solid = forceSolid ?? isScrolled;
+  const scrolledState = solid
+    ? "bg-background/95 dark:bg-background/90 backdrop-blur border-b border-border/60"
+    : "bg-transparent border-transparent";
+  const variantAccent = variant === "transparent" ? "" : "supports-[backdrop-filter]:bg-background/40";
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className={`${navBase} ${scrolledState} ${variantAccent}`}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Left Side */}
@@ -151,7 +181,7 @@ export function Navbar() {
                     </Avatar>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="z-50 w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
@@ -184,7 +214,7 @@ export function Navbar() {
                   <span className="sr-only">{t.menu}</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent side="right" className="z-50 w-[300px] sm:w-[400px]">
                 <SheetHeader>
                   <SheetTitle className="text-left">{t.menu}</SheetTitle>
                 </SheetHeader>

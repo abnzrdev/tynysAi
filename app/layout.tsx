@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -32,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
@@ -41,7 +40,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>
-            <Navbar />
             {children}
           </SessionProvider>
         </ThemeProvider>
