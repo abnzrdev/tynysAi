@@ -1,9 +1,9 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
 import { Wifi, Database, BrainCircuit, Activity, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { type Locale } from '@/lib/i18n/config';
 import type { Session } from 'next-auth';
@@ -94,6 +94,12 @@ const FeatureCard = ({ icon: Icon, title, description }: FeatureCardProps) => (
 
 export function HomePage({ dict }: { dict: Dictionary; lang: Locale; session: Session | null }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const heroRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end end'] });
+
+  const videoScale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1, 0.85]);
+  const videoRadius = useTransform(scrollYProgress, [0, 0.5, 1], [0, 0, 24]);
+  const [isNavbarSolid, setIsNavbarSolid] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -108,12 +114,19 @@ export function HomePage({ dict }: { dict: Dictionary; lang: Locale; session: Se
     return () => video.removeEventListener('loadedmetadata', syncPlaybackRate);
   }, []);
 
+  useMotionValueEvent(scrollYProgress, 'change', (value) => {
+    setIsNavbarSolid(value >= 0.5);
+  });
+
   return (
-    <div className="bg-background">
-      <div className="fixed inset-0 -z-10 overflow-hidden">
+    <div className="bg-background overflow-x-hidden">
+      <motion.div
+        style={{ scale: videoScale, borderRadius: videoRadius }}
+        className="fixed inset-0 z-0 overflow-hidden flex items-center justify-center"
+      >
         <video
           ref={videoRef}
-          className="absolute top-0 left-0 w-screen h-screen object-cover"
+          className="absolute inset-0 w-screen h-screen object-cover"
           src="/media/19079374-uhd_3840_2160_25fps.mp4"
           muted
           loop
@@ -124,19 +137,26 @@ export function HomePage({ dict }: { dict: Dictionary; lang: Locale; session: Se
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/35 to-black/70 backdrop-blur-sm" />
         <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-b from-transparent via-black/60 to-slate-950/90 dark:to-black" />
-      </div>
+      </motion.div>
 
-      <Navbar variant="transparent" />
+      <div className="relative z-10">
+        <Navbar variant="transparent" forceSolid={isNavbarSolid} />
 
-      {/* Cinematic reveal */}
-      <section className="relative min-h-[200vh]">
-        <div className="h-screen" />
-        <div className="h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 text-center">
-          <p className="max-w-5xl text-3xl sm:text-4xl md:text-5xl leading-relaxed font-serif text-foreground drop-shadow-xl">
-            At Tynys, we monitor air quality exclusively through our autonomous IoT devices, providing real-time data from buses, metros, and trolleybuses, resulting in a live environmental snapshot reflective of each city’s transit conditions.
-          </p>
-        </div>
-      </section>
+        {/* Cinematic reveal */}
+        <section ref={heroRef} className="relative min-h-[200vh]">
+          <div className="h-screen" />
+          <div className="h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 text-center">
+            <motion.p
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.6 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="max-w-5xl text-3xl sm:text-4xl md:text-5xl leading-relaxed font-serif text-white drop-shadow-xl"
+            >
+              At Tynys, we monitor air quality exclusively through our autonomous IoT devices, providing real-time data from buses, metros, and trolleybuses, resulting in a live environmental snapshot reflective of each city’s transit conditions.
+            </motion.p>
+          </div>
+        </section>
 
       {/* How it Works */}
       <section id="architecture" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
@@ -287,6 +307,7 @@ export function HomePage({ dict }: { dict: Dictionary; lang: Locale; session: Se
           </div>
         </div>
       </footer>
+    </div>
     </div>
   );
 }
