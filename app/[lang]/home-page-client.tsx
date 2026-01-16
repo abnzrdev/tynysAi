@@ -1,11 +1,11 @@
 'use client';
 
-import { motion, useScroll, useTransform, type Transition, type Variants } from 'framer-motion';
-import { Wifi, Database, BrainCircuit, Activity, CheckCircle, ShieldCheck, CloudCog, Sparkles, Waves, ArrowRight, LayoutDashboard } from 'lucide-react';
+import { motion, type Transition, type Variants } from 'framer-motion';
+import { Wifi, Database, BrainCircuit, Activity, CheckCircle, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Navbar } from '@/components/navbar';
+import { HeroSection } from '@/components/HeroSection';
 import { type Locale } from '@/lib/i18n/config';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -16,7 +16,21 @@ import type { Session } from 'next-auth';
 // Types for components
 type Dictionary = {
   nav: Record<string, string>;
-  hero: Record<string, string>;
+  hero: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    getStarted: string;
+    goToDashboard: string;
+    learnMore: string;
+  };
+  heroPillars: {
+    fewShot: string;
+    optimization: string;
+    structuredOutput: string;
+    security: string;
+  };
   metrics: Record<string, string>;
   dashboard: {
     low: string;
@@ -141,12 +155,6 @@ const useTranslations = (dict: Dictionary) => {
 };
 
 export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Locale; session: Session | null }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const heroRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-
-  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
-  const videoRadius = useTransform(scrollYProgress, [0, 1], [0, 32]);
   const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const [isSendingContact, setIsSendingContact] = useState(false);
   const t = useTranslations(dict);
@@ -160,45 +168,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
     send: 'Send Message',
     sending: 'Sending...'
   };
-  const trustedPartners = [
-    'Kazakhstan Metro',
-    'Astana Transit',
-    'Eurasia Rail',
-    'Steppe Cloud',
-    'Urban Mobility Lab',
-    'Caspian Tech',
-  ];
 
-  const valueProps = [
-    {
-      title: 'Real-Time Accuracy',
-      description: 'Calibrated sensor stacks with sub-minute polling and anomaly smoothing deliver stable AQI streams.',
-      icon: Activity,
-    },
-    {
-      title: 'Data Privacy',
-      description: 'End-to-end encryption and per-device signing ensure IoT payloads stay tenant-bound and compliant.',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'Scalability',
-      description: 'Cloud-native ingestion with autoscaling MQTT bridges keeps fleets online during peak demand.',
-      icon: CloudCog,
-    },
-  ];
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const syncPlaybackRate = () => {
-      video.playbackRate = 1.0;
-    };
-
-    syncPlaybackRate();
-    video.addEventListener('loadedmetadata', syncPlaybackRate);
-    return () => video.removeEventListener('loadedmetadata', syncPlaybackRate);
-  }, []);
 
   const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -225,145 +195,14 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
         <Navbar />
       </div>
 
-      <section ref={heroRef} className="relative min-h-[200vh] pt-24">
-        <div className="sticky top-0 flex h-[calc(100vh-96px)] items-center justify-center">
-          <motion.div
-            initial={false}
-            style={{ scale: videoScale, borderRadius: videoRadius }}
-            className="relative z-0 mx-auto h-full max-w-6xl overflow-hidden shadow-2xl ring-1 ring-white/15"
-          >
-            <motion.video
-              initial={false}
-              ref={videoRef}
-              className="absolute inset-0 h-full w-full object-cover"
-              src="/media/background.mp4"
-              muted
-              loop
-              playsInline
-              autoPlay
-              preload="auto"
-              aria-hidden
-            />
-
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/65" aria-hidden />
-
-            <div className="relative z-10 flex h-full items-center justify-center px-6">
-              <div className="max-w-5xl space-y-6 text-center text-white drop-shadow-[0_16px_48px_rgba(0,0,0,0.55)]">
-                <p className="text-xs uppercase tracking-[0.35em] text-white/70">Air Quality Intelligence</p>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight tracking-[0.22em]">
-                  TynysAi
-                </h1>
-                <p className="text-lg md:text-xl text-white/85 max-w-3xl mx-auto">
-                  Precision IoT Air Quality Monitoring for Urban Environments.
-                </p>
-                <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="h-12 px-6 text-lg bg-white text-slate-900 hover:bg-slate-100 shadow-xl"
-                  >
-                    <Link href={session ? `/${lang}/dashboard` : `/${lang}/sign-up`} className="flex items-center">
-                      {session ? <LayoutDashboard className="mr-2 h-5 w-5" /> : <ArrowRight className="mr-2 h-5 w-5" />}
-                      {session ? "Go to Dashboard" : "Get Started"}
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="h-12 px-6 text-lg border-white/70 bg-white/10 text-white hover:bg-white/20"
-                  >
-                    <Link href="#architecture" className="flex items-center">Learn More</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="relative z-20 -mt-16 py-16 px-4 sm:px-6 lg:px-8 bg-background sm:-mt-24">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <motion.div
-            variants={revealVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="text-center space-y-2"
-          >
-            <p className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Trusted by transit innovators</p>
-            <h3 className="text-3xl sm:text-4xl font-bold text-foreground">Partners who rely on our live air data</h3>
-          </motion.div>
-
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/60 dark:bg-muted/30">
-            <motion.div
-              className="flex gap-12 py-6 px-8 min-w-max"
-              initial={false}
-              animate={{ x: ['0%', '-50%'] }}
-              transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-            >
-              {[...trustedPartners, ...trustedPartners].map((partner, idx) => (
-                <div
-                  key={`${partner}-${idx}`}
-                  className="flex items-center justify-center rounded-xl bg-white dark:bg-slate-900 px-6 py-3 shadow-sm ring-1 ring-border grayscale hover:grayscale-0 transition duration-300"
-                >
-                  <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                    <Waves className="h-5 w-5 text-muted-foreground" />
-                    <span>{partner}</span>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Value Props */}
-      <section className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            variants={revealVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-14"
-          >
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/80 dark:bg-slate-900/70 px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border">
-              <Sparkles className="h-4 w-4 text-teal-500" />
-              Purpose-built for public transit environments
-            </p>
-            <h2 className="mt-4 text-4xl sm:text-5xl font-bold text-foreground">Why teams choose Tynys</h2>
-            <p className="mt-3 text-lg text-muted-foreground max-w-3xl mx-auto">
-              Robust hardware, secure data flows, and elastic cloud delivery—ready for fleets of any size.
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {valueProps.map((prop) => (
-              <motion.div
-                key={prop.title}
-                variants={revealVariants}
-                className="flex flex-col gap-4 rounded-2xl border border-border bg-white/90 dark:bg-slate-900/70 p-6 shadow-lg"
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-blue-100 dark:from-teal-950 dark:to-blue-950 flex items-center justify-center shadow-inner">
-                  <prop.icon className="w-6 h-6 text-teal-700 dark:text-teal-300" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-semibold text-foreground">{prop.title}</h3>
-                  <p className="mt-2 text-muted-foreground leading-relaxed">{prop.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      <HeroSection 
+        lang={lang} 
+        session={session} 
+        dict={{
+          hero: dict.hero,
+          heroPillars: dict.heroPillars,
+        }}
+      />
 
       {/* How it Works */}
       <section id="architecture" className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
@@ -507,10 +346,9 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
             viewport={{ once: true, amount: 0.3 }}
             className="space-y-4 max-w-3xl"
           >
-            <p className="uppercase tracking-[0.25em] text-white/70 text-sm">Ready to launch</p>
-            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">Deploy city-grade air quality intelligence across your fleet.</h2>
+            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">{dict.cta.title}</h2>
             <p className="text-lg text-white/80">
-              Start with a pilot route, then scale to every corridor with the same telemetry, privacy, and uptime guarantees.
+              {dict.cta.description}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
@@ -518,7 +356,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
                 className="h-12 px-6 text-lg bg-white text-slate-900 hover:bg-slate-100"
                 onClick={() => window.location.assign(`/${lang}/sign-in`)}
               >
-                Get Started
+                {dict.cta.button}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>

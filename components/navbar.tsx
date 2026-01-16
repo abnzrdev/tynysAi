@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import DarkModeToggle from '@/components/dark-mode-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -68,6 +68,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [isVideoScrolled, setIsVideoScrolled] = useState(false);
   const isDashboardRoute = pathname?.includes('/dashboard');
   
   // Extract current locale from pathname or use default
@@ -93,14 +94,57 @@ export function Navbar() {
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
   };
+
+  // Watch for video scroll state
+  useEffect(() => {
+    const checkVideoScroll = () => {
+      if (typeof document !== 'undefined') {
+        const hasScrolled = document.body.hasAttribute('data-video-scrolled');
+        setIsVideoScrolled(hasScrolled);
+      }
+    };
+
+    // Check initially
+    checkVideoScroll();
+
+    // Listen for custom event from HeroSection
+    const handleVideoScroll = (event: CustomEvent) => {
+      setIsVideoScrolled(event.detail === true);
+    };
+
+    window.addEventListener('videoScrolled', handleVideoScroll as EventListener);
+
+    // Also watch for attribute changes as fallback
+    if (typeof document !== 'undefined') {
+      const observer = new MutationObserver(checkVideoScroll);
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['data-video-scrolled'],
+      });
+
+      return () => {
+        window.removeEventListener('videoScrolled', handleVideoScroll as EventListener);
+        observer.disconnect();
+      };
+    }
+
+    return () => {
+      window.removeEventListener('videoScrolled', handleVideoScroll as EventListener);
+    };
+  }, []);
   
-  const navBase = "sticky top-0 z-50 w-full bg-background dark:bg-background border-b border-border/60 shadow-sm";
+  // Make navbar always sticky at top with solid background on dashboard or after scrolling past hero
+  const navBase = isDashboardRoute 
+    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm"
+    : isVideoScrolled
+    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm"
+    : "fixed top-0 z-50 w-full bg-transparent border-none";
   const showProfileActions = status === 'authenticated' && session?.user && isDashboardRoute;
 
   return (
-    <nav className={navBase}>
+    <nav className={navBase} style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
       <div className="container mx-auto px-6">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-20 items-center justify-between text-white">
           {/* Logo - Left Side */}
           <div className="flex items-center">
             <Link href={homeLink} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
@@ -112,7 +156,7 @@ export function Navbar() {
                 className="drop-shadow-md"
                 priority
               />
-              <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400 bg-clip-text text-transparent" style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
                 TynysAi
               </span>
             </Link>
@@ -127,12 +171,12 @@ export function Navbar() {
             {status === 'unauthenticated' && (
               <div className="flex items-center gap-3 ml-3">
                 <Link href={`/${locale}/sign-in`}>
-                  <Button variant="ghost" size="default" className="text-lg h-11 px-5">
+                  <Button variant="ghost" size="default" className="text-lg h-11 px-5 text-white hover:bg-white/10">
                     {t.login}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/sign-up`}>
-                  <Button size="default" className="text-lg h-11 px-5 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700">
+                  <Button size="default" className="text-lg h-11 px-5 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white">
                     {t.signUp}
                   </Button>
                 </Link>
@@ -183,7 +227,7 @@ export function Navbar() {
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
                   <Menu className="h-7 w-7" />
                   <span className="sr-only">{t.menu}</span>
                 </Button>
