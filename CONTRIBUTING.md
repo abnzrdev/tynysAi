@@ -16,8 +16,10 @@ npm install
 cp .env.local.example .env.local
 # Edit .env.local with your database credentials
 
-# 4. Set up database
+
+# 4. Set up database (⚠️ destructive: wipes sensor_readings data)
 npx drizzle-kit push
+
 
 # 5. Run development server
 npm run dev
@@ -87,6 +89,7 @@ git checkout -b feature/your-feature
 - Add comments for complex logic
 - Update relevant documentation
 
+
 ### 3. Test Your Changes
 
 ```bash
@@ -98,6 +101,9 @@ npm run lint
 
 # Test locally
 npm run dev
+
+# If you change the DB schema, run:
+npx drizzle-kit push
 ```
 
 ### 4. Commit and Push
@@ -144,9 +150,9 @@ git branch -d feature/your-feature
 
 1. **Never push directly to `main`** - Always create a PR
 2. **Keep PRs focused** - One feature/fix per PR
-3. **Test before submitting** - Ensure `npm run build` succeeds
+3. **Test before submitting** - Ensure `npm run build` and `npm run lint` succeed
 4. **Write clear commit messages** - Help others understand your changes
-5. **Update documentation** - Keep docs in sync with code changes
+5. **Update documentation and migrations** - Keep docs and DB schema in sync with code changes
 
 ## 🛠️ Useful Git Commands
 
@@ -211,6 +217,8 @@ Have an idea? [Open a feature request](https://github.com/yourusername/tynys/iss
 - Write **self-documenting code** with clear variable names
 - Add **JSDoc comments** for complex functions
 - Keep functions **small and focused**
+- Use shadcn/ui and Recharts for UI, and follow Bento Grid layout for dashboards
+- Use Drizzle ORM for all DB access (see lib/db/ and lib/data-access.ts)
 
 ## 🤝 Getting Help
 

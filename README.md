@@ -3,26 +3,28 @@
   <img src="./tynys-logo.png" alt="Tynys AI logo" width="240" />
 </p>
 
-Real-time indoor air quality (IAQ) monitoring for public transport. Ingest CSV sensor streams, store time-series data, and visualize per-user and fleet-wide insights with RBAC and multilingual UI. Developed by the Farabi AGI Center research lab.
+
+Modern, real-time indoor air quality (IAQ) monitoring for public transport and smart environments. Ingests sensor data streams, stores time-series data, and visualizes per-user and fleet-wide insights with RBAC and multilingual UI. Built by the Farabi AGI Center research lab.
 
 ## What it does
-- Accepts CSV uploads at `/api/ingest` (bearer-authenticated)
-- Displays recent and historical readings with filters and stats
-- Provides user/admin dashboards via NextAuth-based RBAC
-- Supports English, Russian, and Kazakh locales plus dark/light themes
+- Accepts sensor data uploads at `/api/ingest` (bearer-authenticated, CSV or JSON)
+- Displays real-time and historical readings with advanced filters, stats, and charts
+- User/admin dashboards with RBAC (NextAuth)
+- English, Russian, and Kazakh locales; dark/light themes
 
 ## Stack
 - Next.js 14 (App Router), React 18, TypeScript
-- Tailwind CSS + shadcn/ui, Recharts
-- PostgreSQL + Drizzle ORM
+- Tailwind CSS + shadcn/ui, Recharts, Leaflet
+- PostgreSQL + Drizzle ORM (see `drizzle/` for schema)
 - NextAuth.js (credentials), bcryptjs, next-themes
 
 ## Quick start
 1) Install: `npm install`
 2) Env + DB: create `.env.local` (see below) and database `createdb tynys`
-3) Migrate: `npx drizzle-kit push`
+3) Migrate: `npx drizzle-kit push` (⚠️ destructive: wipes sensor_readings data)
 4) Run: `npm run dev` → http://localhost:3000
 5) Admin: sign up at `/en/sign-up`, then `npm run set:admin your-email@example.com`
+
 
 ### Required env vars
 ```
@@ -50,6 +52,7 @@ BLOB_READ_WRITE_TOKEN=<optional-if-using-blob-storage>
 - Endpoint: POST `/api/ingest`
 - Auth: `Authorization: Bearer <IOT_DEVICE_SECRET>`
 - CSV schema: `timestamp,sensor_id,value[,location,transport_type]`
+- JSON schema: see `docs/api-documentation.md`
 - Example:
 ```bash
 curl -X POST http://localhost:3000/api/ingest \
@@ -68,15 +71,17 @@ curl -X POST http://localhost:3000/api/ingest \
 - `npm run lint` — lint
 - `npm run seed:dummy` — load sample data
 - `npm run set:admin <email>` — grant admin role
+- `npx drizzle-kit push` — run DB migrations (⚠️ destructive for sensor_readings)
 
 ## Project layout
 ```
-app/            # Next.js routes (app router, i18n folders)
-app/api/        # Auth and ingest endpoints
-components/     # UI and shared components
+app/            # Next.js routes (App Router, i18n folders)
+app/api/        # Auth, ingest, v1 endpoints
+components/     # UI and shared components (shadcn/ui, charts, maps)
 lib/            # Auth, db, i18n, CSV parsing, data access
-drizzle/        # Migrations
+drizzle/        # Migrations (see 0008_reset_sensor_readings.sql for destructive reset)
 scripts/        # Admin + seeding utilities
+docs/           # API, data dictionary, schema docs
 ```
 
 ## License
