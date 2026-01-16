@@ -1,3 +1,33 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Env files (do NOT commit secrets)
+env.text
+.env
+.env.local
+.env.*
+
+# Ignore large or generated media
+public/media/*.mp4
+
+# Optional local folders / example app
+v0-landing-page-with-video/
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
