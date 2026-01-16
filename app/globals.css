@@ -86,3 +86,29 @@
     scroll-behavior: smooth;
   }
 }
+
+@layer components {
+  /* Button hover contrast fixes - ensure white text on hover for buttons with white/light backgrounds */
+  button.text-white:hover,
+  button[class*="text-white"]:hover {
+    color: white !important;
+  }
+
+  /* Specific fixes for buttons with transparent backgrounds */
+  button[class*="hover:bg-white/10"]:hover,
+  button[class*="hover:bg-white/20"]:hover {
+    color: white !important;
+  }
+
+  /* Login button specific styling */
+  .login-btn,
+  button[class*="hover:bg-white/10"] {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .login-btn:hover,
+  button[class*="hover:bg-white/10"]:hover {
+    color: white !important;
+    background-color: rgba(15, 23, 42, 0.95) !important;
+  }
+}
