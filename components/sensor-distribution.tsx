@@ -82,11 +82,11 @@ export function SensorDistribution({ data, total, emptyText }: SensorDistributio
                 className="h-3 w-3 rounded-full"
                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
-              <span className="font-medium truncate">{slice.sensorId}</span>
+              <span className="font-mono font-semibold truncate">{slice.sensorId}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-mono text-base text-foreground">{slice.count}</span>
-              <span>{slice.percentage}%</span>
+              <span className="font-mono text-base text-foreground">{slice.percentage}%</span>
             </div>
           </div>
         ))}

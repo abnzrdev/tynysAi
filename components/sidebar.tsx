@@ -172,7 +172,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
   };
 
   const renderSidebarContent = (compact: boolean) => (
-    <div className="flex h-full flex-col bg-background text-sm text-foreground transition-colors">
+    <div className="flex h-full flex-col bg-[hsl(var(--card))] text-sm text-[hsl(var(--foreground))] transition-colors">
       <div className="border-b border-border px-4 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
               {!compact && (
                 <div className="flex flex-1 items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium font-mono">{item.label}</span>
                     {item.description && (
                       <span className="text-xs text-muted-foreground">
                         {item.description}
@@ -270,7 +270,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
                         child.anchorId && activeSection !== child.anchorId && "opacity-60"
                       )}
                     />
-                    <span>{child.label}</span>
+                    <span className="font-mono">{child.label}</span>
                   </Link>
                 ))}
               </div>
@@ -289,7 +289,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
   }, [isCollapsed]);
 
   return (
-    <div className="relative flex min-h-screen bg-background text-foreground transition-colors">
+    <div className="sidebar-layout relative flex min-h-screen overflow-x-hidden bg-background text-foreground transition-colors">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden lg:block">
         <motion.div
@@ -297,7 +297,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
           animate={{ width: isCollapsed ? NAV_WIDTH.collapsed : NAV_WIDTH.expanded }}
           transition={{ type: "spring", stiffness: 180, damping: 22 }}
           className={cn(
-            "h-full overflow-hidden border-r border-border bg-background shadow-2xl transition-colors",
+            "h-full overflow-hidden border-r border-border bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-2xl transition-colors",
           )}
         >
           {renderSidebarContent(isCollapsed)}

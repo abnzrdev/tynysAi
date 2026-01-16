@@ -1,12 +1,25 @@
 "use client";
 
 import { useMemo } from "react";
-import { AirQualityMap, type MapReading } from "@/components/air-quality-map";
+import dynamic from "next/dynamic";
+import type { MapReading } from "@/components/air-quality-map";
 import {
   LiveFeedOverlay,
   type LiveFeedItem,
 } from "@/components/live-feed-overlay";
 import { Activity, Database, Radio, TrendingUp } from "lucide-react";
+
+type AirQualityMapProps = {
+  readings: MapReading[];
+  emptyStateText: string;
+  heightClass?: string;
+  className?: string;
+};
+
+const AirQualityMap = dynamic<AirQualityMapProps>(
+  () => import("@/components/air-quality-map").then((mod) => mod.AirQualityMap),
+  { ssr: false }
+);
 
 export interface StatLabels {
   totalDataPoints: string;

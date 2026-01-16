@@ -42,8 +42,8 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
   const sensorReadings = await getRecentSensorReadings(user.id, 500);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl space-y-10 p-4 md:p-6 lg:p-8">
+    <div className="dashboard-shell min-h-screen bg-background overflow-x-hidden">
+      <div className="mx-auto max-w-7xl space-y-10 p-4 text-[17px] md:p-6 md:text-[18px] lg:p-8 overflow-x-hidden">
         <DashboardClient readings={sensorReadings} dict={dict.dashboardPage} />
       </div>
     </div>

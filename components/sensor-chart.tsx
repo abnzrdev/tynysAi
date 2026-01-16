@@ -114,7 +114,7 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
                 </>
               )}
               <span className="text-muted-foreground">•</span>
-              <span className="font-mono font-bold text-lg">
+              <span className="font-mono font-bold text-3xl leading-none">
                 {latestReading.value.toFixed(2)}
               </span>
               <span className="text-muted-foreground">•</span>
@@ -208,7 +208,12 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
                   angle={-45}
                   textAnchor="end"
                   height={100}
-                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{
+                    fontSize: 12,
+                    fill: "hsl(var(--muted-foreground))",
+                    fontFamily:
+                      'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  }}
                   stroke="hsl(var(--border))"
                 />
                 <YAxis
@@ -218,7 +223,11 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
                     position: "insideLeft",
                     style: { fill: "hsl(var(--muted-foreground))" },
                   }}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  tick={{
+                    fill: "hsl(var(--muted-foreground))",
+                    fontFamily:
+                      'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  }}
                   stroke="hsl(var(--border))"
                 />
                 <Tooltip

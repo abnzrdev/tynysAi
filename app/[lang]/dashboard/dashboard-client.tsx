@@ -268,7 +268,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
               Reset
             </Button>
             <Badge variant="outline" className="uppercase tracking-wide text-[11px]">
-              {filteredReadings.length} active points
+              <span className="font-mono mr-1">{filteredReadings.length}</span> active points
             </Badge>
           </div>
         </div>
@@ -331,7 +331,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
                       <p className="font-mono text-3xl font-semibold">
                         {statNumbers.avgValue.toFixed(2)}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="font-mono text-[11px] text-muted-foreground">
                         Range {statNumbers.minValue.toFixed(1)}–{statNumbers.maxValue.toFixed(1)}
                       </p>
                     </div>

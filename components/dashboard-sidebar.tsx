@@ -93,7 +93,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
   ];
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-colors">
       {/* Logo and Brand */}
       <div className={cn("border-b border-border p-6", isCollapsed && "p-4")}>
         <div className="flex items-center justify-between">
@@ -157,12 +157,12 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-[hsl(var(--foreground))]",
               isCollapsed && "justify-center"
             )}
           >
             <item.icon className={cn("h-5 w-5 flex-shrink-0", item.color)} />
-            {!isCollapsed && <span>{item.name}</span>}
+            {!isCollapsed && <span className="font-mono">{item.name}</span>}
           </Link>
         ))}
       </nav>
@@ -216,7 +216,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       {/* Mobile Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r border-border transition-transform duration-300 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-border bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-transform duration-300 lg:hidden",
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -226,7 +226,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 hidden transform bg-card border-r border-border transition-all duration-300 lg:block",
+          "fixed inset-y-0 left-0 z-50 hidden transform border-r border-border bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-all duration-300 lg:block",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
