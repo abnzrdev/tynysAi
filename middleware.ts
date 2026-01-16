@@ -14,9 +14,9 @@ async function getLocale(request: NextRequest): Promise<string> {
   if (pathnameLocale) return pathnameLocale;
 
   // Use location detection with fallback chain
-  // Priority: Cookie → IP Geolocation (Vercel geo) → Browser Language → Default
+  // Priority: Cookie → IP Geolocation (cloud provider geo) → Browser Language → Default
   try {
-    // Get country code from Vercel geo object (available in Vercel deployments)
+    // Get country code from cloud provider geo object (if available)
     // For other platforms, this will be null and we'll fall back to browser language
     const countryCode = request.geo?.country || null;
 

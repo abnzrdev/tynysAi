@@ -33,6 +33,19 @@ NEXTAUTH_SECRET=<openssl rand -base64 32>
 IOT_DEVICE_SECRET=<random-token-for-devices>
 ```
 
+## Deployment (Docker)
+1) Create `.env.production` with the runtime vars:
+```
+DB_URL=postgresql://user:password@db:5432/tynys
+NEXTAUTH_SECRET=<openssl rand -base64 32>
+NEXTAUTH_URL=http://localhost:3000
+IOT_DEVICE_SECRET=<random-token-for-devices>
+BLOB_READ_WRITE_TOKEN=<optional-if-using-blob-storage>
+```
+2) Build the image: `docker build -t tynys:latest .`
+3) Run the container: `docker run -p 3000:3000 --env-file .env.production tynys:latest`
+4) The image uses Next.js `output=standalone`, runs as a non-root user, and `.dockerignore` strips dev assets (scripts, migrations, tests, docs) to keep the runtime lean.
+
 ## Data ingestion
 - Endpoint: POST `/api/ingest`
 - Auth: `Authorization: Bearer <IOT_DEVICE_SECRET>`

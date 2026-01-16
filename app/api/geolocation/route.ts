@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * In production, you might want to use a more reliable service like:
  * - MaxMind GeoIP2
  * - Cloudflare (if using Cloudflare)
- * - Vercel Edge Config with geolocation
+ * - Edge Config with geolocation
  */
 
 // Force dynamic rendering since we need to access request headers
@@ -18,22 +18,22 @@ export async function GET(request: NextRequest) {
     const forwardedFor = request.headers.get('x-forwarded-for');
     const realIP = request.headers.get('x-real-ip');
     const cfIP = request.headers.get('cf-connecting-ip'); // Cloudflare
-    const vercelIP = request.headers.get('x-vercel-forwarded-for'); // Vercel
+    // const vercelIP = request.headers.get('x-vercel-forwarded-for'); // Removed Vercel
     
     const clientIP = 
       cfIP || 
-      vercelIP || 
+      // vercelIP || 
       (forwardedFor ? forwardedFor.split(',')[0].trim() : null) || 
       realIP || 
       '';
 
-    // If we have Vercel, use their geolocation
+    // If we have edge provider, use their geolocation
     if (request.geo?.country) {
       return NextResponse.json({
         country: request.geo.country,
         countryCode: request.geo.country,
         ip: clientIP,
-        source: 'vercel',
+        source: 'edge',
       });
     }
 

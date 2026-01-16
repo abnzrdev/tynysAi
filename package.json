@@ -10,7 +10,7 @@
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "seed:deploy": "NODE_ENV=production tsx scripts/seed.ts",
-    "vercel-build": "npm run migrate && npm run seed:deploy && next build",
+
     "seed:dummy": "npm run seed",
     "set:admin": "dotenv -e .env.local -- tsx scripts/set-admin.ts"
   },

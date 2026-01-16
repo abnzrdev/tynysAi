@@ -89,7 +89,7 @@ export async function detectUserLocale(
 
 /**
  * Get IP address from request headers
- * Handles various proxy headers (Vercel, Cloudflare, etc.)
+ * Handles various proxy headers (Cloudflare, etc.)
  */
 export function getClientIP(request: {
   headers: Headers | Record<string, string | string[] | undefined>;
@@ -103,7 +103,7 @@ export function getClientIP(request: {
     'x-forwarded-for',
     'x-real-ip',
     'cf-connecting-ip', // Cloudflare
-    'x-vercel-forwarded-for', // Vercel
+    // 'x-vercel-forwarded-for', // Removed Vercel
     'x-client-ip',
   ];
 
