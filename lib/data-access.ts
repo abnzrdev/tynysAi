@@ -1,6 +1,6 @@
 import { eq, desc, count } from 'drizzle-orm';
 import { db } from './db';
-import { iotData, sensorReadings, users } from './db/schema';
+import { iotData, sensorReadings, users, sensors } from './db/schema';
 import type { SensorReading } from './csv-parser';
 
 /**
@@ -102,23 +102,75 @@ export async function getUserData(userId: number) {
 
 /**
  * Retrieves recent sensor readings for a specific user with optional limit
+ * Maps new comprehensive schema to legacy format for backward compatibility
  * @param userId - The ID of the user to filter readings for
  * @param limit - Maximum number of readings to retrieve (default: 100)
- * @returns Array of sensor readings for the specified user
+ * @returns Array of sensor readings for the specified user in legacy format
  */
 export async function getRecentSensorReadings(userId: number, limit: number = 100) {
   try {
     const readings = await db
-      .select()
+      .select({
+        id: sensorReadings.id,
+        sensorId: sensorReadings.sensorId,
+        deviceId: sensors.deviceId,
+        timestamp: sensorReadings.timestamp,
+        pm25: sensorReadings.pm25,
+        pm10: sensorReadings.pm10,
+        pm1: sensorReadings.pm1,
+        co2: sensorReadings.co2,
+        value: sensorReadings.value,
+        location: sensorReadings.location,
+        transportType: sensorReadings.transportType,
+        ingestedAt: sensorReadings.ingestedAt,
+        latitude: sensors.latitude,
+        longitude: sensors.longitude,
+      })
       .from(sensorReadings)
+      .leftJoin(sensors, eq(sensorReadings.sensorId, sensors.id))
       .where(eq(sensorReadings.userId, userId))
       .orderBy(desc(sensorReadings.ingestedAt))
       .limit(limit);
 
-    return readings;
+    // Map to legacy format expected by dashboard
+    return readings.map((reading) => {
+      // Format location as "lat,lng" if coordinates are available, otherwise use the location field
+      let locationStr = reading.location;
+      if (reading.latitude != null && reading.longitude != null) {
+        // Use sensor coordinates if available
+        locationStr = `${reading.latitude},${reading.longitude}`;
+      } else if (reading.location && !reading.location.includes(',')) {
+        // If location is just a name (like "Almaty") and we don't have coordinates, keep it as is
+        // The map component will skip it, but at least we preserve the original data
+        locationStr = reading.location;
+      }
+
+      return {
+        id: reading.id,
+        timestamp: reading.timestamp instanceof Date 
+          ? reading.timestamp.toISOString() 
+          : typeof reading.timestamp === 'string' 
+            ? reading.timestamp 
+            : new Date(reading.timestamp).toISOString(),
+        sensorId: reading.deviceId || reading.sensorId?.toString() || '', // Use deviceId if available, fallback to sensorId
+        // Use legacy value field if available, otherwise use pm25, fallback to pm10, pm1, or co2
+        value: reading.value ?? reading.pm25 ?? reading.pm10 ?? reading.pm1 ?? reading.co2 ?? 0,
+        location: locationStr,
+        transportType: reading.transportType,
+        ingestedAt: reading.ingestedAt instanceof Date 
+          ? reading.ingestedAt 
+          : typeof reading.ingestedAt === 'string' 
+            ? new Date(reading.ingestedAt) 
+            : reading.ingestedAt,
+      };
+    });
   } catch (error) {
     console.error('Error fetching sensor readings:', error);
-    throw new Error('Failed to fetch sensor readings');
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error('Error details:', errorDetails);
+    throw new Error(`Failed to fetch sensor readings: ${errorMessage}`);
   }
 }
 
@@ -135,10 +187,40 @@ export async function batchInsertSensorReadings(readings: SensorReading[], userI
   }
 
   try {
+    // Import findOrCreateSensor from sensor-data-access
+    const { findOrCreateSensor, findOrCreateSite } = await import('./sensor-data-access');
+    
+    // Get unique sensor IDs and locations
+    const uniqueSensorIds = Array.from(new Set(readings.map(r => r.sensor_id)));
+    const uniqueLocations = Array.from(new Set(readings.map(r => r.location).filter(Boolean)));
+    
+    // Find or create all sensors and sites
+    const sensorMap = new Map<string, number>();
+    const siteMap = new Map<string, number>();
+    
+    // Create sites first
+    for (const location of uniqueLocations) {
+      if (location) {
+        const siteId = await findOrCreateSite(location);
+        siteMap.set(location, siteId);
+      }
+    }
+    
+    // Create sensors
+    for (const sensorId of uniqueSensorIds) {
+      const reading = readings.find(r => r.sensor_id === sensorId);
+      const siteId = reading?.location ? siteMap.get(reading.location) : null;
+      const sensor = await findOrCreateSensor({
+        deviceId: sensorId,
+        siteId: siteId || null,
+      });
+      sensorMap.set(sensorId, sensor.id);
+    }
+    
     // Map CSV data to database schema
     const records = readings.map((reading) => ({
-      timestamp: reading.timestamp,
-      sensorId: reading.sensor_id,
+      timestamp: new Date(reading.timestamp), // Convert string to Date
+      sensorId: sensorMap.get(reading.sensor_id)!, // Use integer sensor ID
       value: reading.value,
       location: reading.location || null,
       transportType: reading.transport_type || null,
