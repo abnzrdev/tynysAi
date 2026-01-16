@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { i18n } from '@/lib/i18n/config';
 import { getToken } from 'next-auth/jwt';
+import { detectUserLocale } from '@/lib/i18n/location-detection';
 
-function getLocale(request: NextRequest): string {
+async function getLocale(request: NextRequest): Promise<string> {
   // Check if locale is in the pathname
   const pathname = request.nextUrl.pathname;
   const pathnameLocale = i18n.locales.find(
@@ -12,25 +13,47 @@ function getLocale(request: NextRequest): string {
 
   if (pathnameLocale) return pathnameLocale;
 
-  // Check cookie
-  const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
-  if (localeCookie && i18n.locales.includes(localeCookie as any)) {
-    return localeCookie;
-  }
+  // Use location detection with fallback chain
+  // Priority: Cookie → IP Geolocation (Vercel geo) → Browser Language → Default
+  try {
+    // Get country code from Vercel geo object (available in Vercel deployments)
+    // For other platforms, this will be null and we'll fall back to browser language
+    const countryCode = request.geo?.country || null;
 
-  // Check Accept-Language header
-  const acceptLanguage = request.headers.get('accept-language');
-  if (acceptLanguage) {
-    const preferredLocale = acceptLanguage
-      .split(',')[0]
-      .split('-')[0]
-      .toLowerCase();
+    // Use location detection utility
+    const detection = await detectUserLocale(
+      {
+        headers: request.headers,
+        cookies: request.cookies,
+      },
+      countryCode || undefined
+    );
+
+    return detection.locale;
+  } catch (error) {
+    // Fallback to simple detection if location detection fails
+    console.error('Location detection error:', error);
     
-    if (preferredLocale === 'ru' && i18n.locales.includes('ru')) return 'ru';
-    if (preferredLocale === 'kk' && i18n.locales.includes('kz')) return 'kz';
-  }
+    // Check cookie
+    const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
+    if (localeCookie && i18n.locales.includes(localeCookie as any)) {
+      return localeCookie;
+    }
 
-  return i18n.defaultLocale;
+    // Check Accept-Language header
+    const acceptLanguage = request.headers.get('accept-language');
+    if (acceptLanguage) {
+      const preferredLocale = acceptLanguage
+        .split(',')[0]
+        .split('-')[0]
+        .toLowerCase();
+      
+      if (preferredLocale === 'ru' && i18n.locales.includes('ru')) return 'ru';
+      if (preferredLocale === 'kk' && i18n.locales.includes('kz')) return 'kz';
+    }
+
+    return i18n.defaultLocale;
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -52,8 +75,8 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!pathnameHasLocale) {
-    // Redirect to locale-prefixed URL
-    const locale = getLocale(request);
+    // Redirect to locale-prefixed URL using location-based detection
+    const locale = await getLocale(request);
     const newUrl = new URL(`/${locale}${pathname}`, request.url);
     newUrl.search = request.nextUrl.search;
     
