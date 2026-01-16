@@ -260,7 +260,25 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.1] tracking-[-0.02em] mb-4"
               >
-                {dict.hero.title || 'TynysAi'}
+                {dict.hero.title ? (
+                  (() => {
+                    const words = dict.hero.title.split(' ');
+                    const firstWord = words[0];
+                    const rest = words.slice(1).join(' ');
+                    return (
+                      <>
+                        <span className="bg-gradient-to-r from-teal-400 via-blue-400 to-teal-300 bg-clip-text text-transparent">
+                          {firstWord}
+                        </span>
+                        {rest && <span> {rest}</span>}
+                      </>
+                    );
+                  })()
+                ) : (
+                  <span className="bg-gradient-to-r from-teal-400 via-blue-400 to-teal-300 bg-clip-text text-transparent">
+                    TynysAi
+                  </span>
+                )}
               </motion.h1>
               
               {/* Subheading - Short and Concise */}
@@ -283,7 +301,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                 <Button
                   asChild
                   size="lg"
-                  className="h-14 px-8 text-lg font-semibold bg-white text-slate-900 hover:bg-slate-100 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg"
+                  className="h-14 px-8 text-lg font-semibold bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg"
                 >
                   <Link href={session ? `/${lang}/dashboard` : `/${lang}/sign-up`} className="flex items-center">
                     {session ? <LayoutDashboard className="mr-2 h-5 w-5" /> : <ArrowRight className="mr-2 h-5 w-5" />}
@@ -294,7 +312,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="h-14 px-8 text-lg font-semibold border-2 border-white/70 bg-white/10 text-white hover:bg-white/20 hover:border-white/90 transition-all duration-300 rounded-lg backdrop-blur-sm"
+                  className="h-14 px-8 text-lg font-semibold border-2 border-white/70 bg-white/10 text-white hover:bg-white/20 hover:border-white/90 hover:text-white transition-all duration-300 rounded-lg backdrop-blur-sm"
                 >
                   <Link href="#architecture" className="flex items-center">{dict.hero.learnMore}</Link>
                 </Button>

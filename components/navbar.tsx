@@ -133,18 +133,35 @@ export function Navbar() {
     };
   }, []);
   
+  // Determine if navbar has solid background (needs dark text in light mode)
+  const hasSolidBackground = isDashboardRoute || isVideoScrolled;
+  
   // Make navbar always sticky at top with solid background on dashboard or after scrolling past hero
-  const navBase = isDashboardRoute 
-    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm"
-    : isVideoScrolled
-    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm"
-    : "fixed top-0 z-50 w-full bg-transparent border-none";
+  const navBase = hasSolidBackground
+    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm transition-all duration-300 ease-in-out"
+    : "fixed top-0 z-50 w-full bg-transparent border-none transition-all duration-300 ease-in-out";
   const showProfileActions = status === 'authenticated' && session?.user && isDashboardRoute;
+  
+  // Text color classes based on background state
+  // When transparent: white text
+  // When solid: use foreground color (dark in light mode, light in dark mode)
+  const textColorClass = hasSolidBackground 
+    ? "text-foreground" 
+    : "text-white";
+  const logoTextClass = hasSolidBackground
+    ? "text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400 bg-clip-text text-transparent"
+    : "text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent";
+  const buttonTextClass = hasSolidBackground
+    ? "text-foreground hover:bg-muted hover:text-foreground"
+    : "text-white hover:bg-white/10 hover:text-white";
+  const iconColorClass = hasSolidBackground
+    ? "text-foreground"
+    : "text-white";
 
   return (
     <nav className={navBase} style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
       <div className="container mx-auto px-6">
-        <div className="flex h-20 items-center justify-between text-white">
+        <div className={`flex h-20 items-center justify-between transition-colors duration-300 ${textColorClass}`}>
           {/* Logo - Left Side */}
           <div className="flex items-center">
             <Link href={homeLink} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
@@ -156,14 +173,14 @@ export function Navbar() {
                 className="drop-shadow-md"
                 priority
               />
-              <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400 bg-clip-text text-transparent" style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
+              <span className={logoTextClass} style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
                 TynysAi
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation - Hidden on mobile */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className={`hidden md:flex items-center gap-3 ${hasSolidBackground ? '' : '[&_svg]:text-white [&_button]:text-white [&_button]:hover:bg-white/10'}`}>
             <LanguageSwitcher />
             <DarkModeToggle />
             
@@ -171,12 +188,12 @@ export function Navbar() {
             {status === 'unauthenticated' && (
               <div className="flex items-center gap-3 ml-3">
                 <Link href={`/${locale}/sign-in`}>
-                  <Button variant="ghost" size="default" className="text-lg h-11 px-5 text-white hover:bg-white/10">
+                  <Button variant="ghost" size="default" className={`text-lg h-11 px-5 transition-colors duration-300 ${buttonTextClass}`}>
                     {t.login}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/sign-up`}>
-                  <Button size="default" className="text-lg h-11 px-5 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white">
+                  <Button size="default" className={`text-lg h-11 px-5 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white hover:text-white transition-all duration-300`}>
                     {t.signUp}
                   </Button>
                 </Link>
@@ -227,8 +244,8 @@ export function Navbar() {
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                  <Menu className="h-7 w-7" />
+                <Button variant="ghost" size="icon" className={`transition-colors duration-300 ${buttonTextClass}`}>
+                  <Menu className={`h-7 w-7 transition-colors duration-300 ${iconColorClass}`} />
                   <span className="sr-only">{t.menu}</span>
                 </Button>
               </SheetTrigger>
