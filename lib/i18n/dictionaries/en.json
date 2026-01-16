@@ -33,6 +33,7 @@
     "high": "High",
     "low": "Low"
   },
+  "howItWorks": "How it Works",
   "architecture": {
     "title": "How It Works",
     "description": "Four hierarchical layers working in harmony to deliver reliable, real-time air quality insights",
@@ -142,6 +143,15 @@
     "accountCreatedSuccess": "Account created successfully! Redirecting to sign in...",
     "failedToCreate": "Failed to create account. Please try again.",
     "errorOccurred": "An error occurred. Please try again."
+  },
+  "contact": {
+    "talkToUs": "Talk to us",
+    "header": "Talk to our team",
+    "tagline": "Share how we can help. We respond within one business day.",
+    "emailLabel": "Your Email",
+    "messageLabel": "Message",
+    "send": "Send Message",
+    "sending": "Sending..."
   },
   "navbar": {
     "login": "Login",
