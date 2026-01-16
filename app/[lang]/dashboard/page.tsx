@@ -39,7 +39,15 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
     );
   }
 
-  const sensorReadings = await getRecentSensorReadings(user.id, 500);
+  // Fetch sensor readings with error handling
+  let sensorReadings: Awaited<ReturnType<typeof getRecentSensorReadings>> = [];
+  try {
+    sensorReadings = await getRecentSensorReadings(user.id, 500);
+  } catch (error) {
+    console.error('Failed to fetch sensor readings:', error);
+    // Return empty array to prevent page crash, dashboard will show empty state
+    sensorReadings = [];
+  }
 
   return (
     <div className="dashboard-shell min-h-screen bg-background overflow-x-hidden">

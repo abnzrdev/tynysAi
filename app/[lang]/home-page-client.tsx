@@ -1,16 +1,13 @@
 'use client';
 
 import { motion, type Transition, type Variants } from 'framer-motion';
-import { Wifi, Database, BrainCircuit, Activity, CheckCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle, Mail } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { HeroSection } from '@/components/HeroSection';
+import { ContactFormModal } from '@/components/ContactFormModal';
 import { type Locale } from '@/lib/i18n/config';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import type { Session } from 'next-auth';
 
 // Types for components
@@ -64,7 +61,6 @@ type ArchitectureLayerProps = {
   number: number;
   title: string;
   description: string;
-  icon: IconComponent;
   delay: number;
 };
 
@@ -97,25 +93,42 @@ const staggerContainer = {
   },
 };
 
-const ArchitectureLayer = ({ number, title, description, icon: Icon, delay }: ArchitectureLayerProps) => (
+const ArchitectureLayer = ({ number, title, description, delay }: ArchitectureLayerProps) => (
   <motion.div
     variants={revealVariants}
     initial="hidden"
     whileInView="visible"
-    viewport={{ once: true, margin: "-100px" }}
+    viewport={{ once: true, margin: "-50px" }}
     transition={{ ...revealTransition, delay }}
-    className="relative flex gap-6 items-start group"
+    className="relative group h-full"
   >
-    <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border-2 border-teal-500 dark:border-teal-400 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-      <Icon className="w-8 h-8 text-teal-600 dark:text-teal-400" />
-    </div>
-    <div className="flex-1">
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-sm font-bold text-teal-600 dark:text-teal-400">LAYER {number}</span>
-        <div className="h-px bg-gradient-to-r from-teal-200 dark:from-teal-800 to-transparent flex-1" />
+    <div className="relative h-full p-6 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-teal-200/50 dark:border-teal-800/50 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:border-teal-400 dark:hover:border-teal-500">
+      {/* Gradient overlay on hover */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-50/0 via-blue-50/0 to-teal-50/0 group-hover:from-teal-50/40 group-hover:via-blue-50/20 group-hover:to-teal-50/40 dark:group-hover:from-teal-950/15 dark:group-hover:via-blue-950/8 dark:group-hover:to-teal-950/15 transition-all duration-500 pointer-events-none" />
+      
+      {/* Content */}
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Header with Number */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-400 to-blue-500 rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+            <div className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 via-teal-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <span className="text-lg font-bold text-white">{number}</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="inline-block px-2.5 py-1 rounded-full bg-teal-100 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 mb-2">
+              <span className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wider">Layer {number}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Title and Description */}
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">{title}</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+        </div>
       </div>
-      <h3 className="text-xl font-bold text-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
   </motion.div>
 );
@@ -155,39 +168,9 @@ const useTranslations = (dict: Dictionary) => {
 };
 
 export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Locale; session: Session | null }) {
-  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
-  const [isSendingContact, setIsSendingContact] = useState(false);
   const t = useTranslations(dict);
   const howItWorksHeading = t('howItWorks') ?? t('architecture.title') ?? 'How it Works';
-  const contactCopy = dict.contact ?? {
-    talkToUs: 'Talk to us',
-    header: 'Talk to our team',
-    tagline: 'Share how we can help. We respond within one business day.',
-    emailLabel: 'Your Email',
-    messageLabel: 'Message',
-    send: 'Send Message',
-    sending: 'Sending...'
-  };
-
-
-  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    setIsSendingContact(true);
-
-    console.log('Contact request', {
-      email: formData.get('email'),
-      message: formData.get('message'),
-    });
-
-    setTimeout(() => {
-      setIsSendingContact(false);
-      setIsContactDialogOpen(false);
-      form.reset();
-    }, 450);
-  };
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
     <div className="bg-background overflow-x-hidden">
@@ -205,27 +188,117 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
       />
 
       {/* How it Works */}
-      <section id="architecture" className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
-        <div className="max-w-6xl mx-auto">
+      <section id="architecture" className="relative z-10 py-12 px-4 sm:px-6 lg:px-8 overflow-hidden -mt-20">
+        {/* Background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+        
+        {/* SVG Decorative Elements - Connecting Flow */}
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 dark:opacity-10" aria-hidden="true" style={{ zIndex: 0 }}>
+          <defs>
+            <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgb(20, 184, 166)" stopOpacity="0.4" />
+              <stop offset="50%" stopColor="rgb(59, 130, 246)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="rgb(20, 184, 166)" stopOpacity="0.4" />
+            </linearGradient>
+            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="rgb(20, 184, 166)" opacity="0.5" />
+            </marker>
+          </defs>
+          
+          {/* Flow path: 1 -> 2 -> 4 -> 3 */}
+          <motion.path
+            d="M 20% 25% L 50% 25% L 50% 50% L 80% 50% L 80% 75%"
+            stroke="url(#connectionGradient)"
+            strokeWidth="2"
+            fill="none"
+            strokeDasharray="8,4"
+            markerEnd="url(#arrowhead)"
+            initial={{ pathLength: 0, opacity: 0 }}
+            whileInView={{ pathLength: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, delay: 0.8, ease: "easeInOut" }}
+          />
+          
+          {/* Connection from 1 to 3 */}
+          <motion.path
+            d="M 20% 25% Q 20% 50%, 20% 75%"
+            stroke="url(#connectionGradient)"
+            strokeWidth="1.5"
+            fill="none"
+            strokeDasharray="6,3"
+            initial={{ pathLength: 0, opacity: 0 }}
+            whileInView={{ pathLength: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.2, delay: 1, ease: "easeInOut" }}
+          />
+          
+          {/* Connection from 2 to 4 */}
+          <motion.path
+            d="M 80% 25% Q 80% 50%, 80% 75%"
+            stroke="url(#connectionGradient)"
+            strokeWidth="1.5"
+            fill="none"
+            strokeDasharray="6,3"
+            initial={{ pathLength: 0, opacity: 0 }}
+            whileInView={{ pathLength: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.2, delay: 1.2, ease: "easeInOut" }}
+          />
+          
+          {/* Decorative nodes at card positions */}
+          {[1, 2, 3, 4].map((num, idx) => {
+            const positions = [
+              { x: '20%', y: '25%' }, // Layer 1
+              { x: '80%', y: '25%' }, // Layer 2
+              { x: '20%', y: '75%' }, // Layer 3
+              { x: '80%', y: '75%' }, // Layer 4
+            ];
+            return (
+              <motion.circle
+                key={num}
+                cx={positions[idx].x}
+                cy={positions[idx].y}
+                r="4"
+                fill="rgb(20, 184, 166)"
+                opacity="0.6"
+                initial={{ scale: 0, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 0.6 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.5 + idx * 0.1 }}
+              />
+            );
+          })}
+        </svg>
+        
+        <div className="relative max-w-7xl mx-auto">
           <motion.div
             variants={revealVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
-            <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">{howItWorksHeading}</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <div className="inline-block mb-3">
+              <span className="px-4 py-1.5 rounded-full bg-gradient-to-r from-teal-100 to-blue-100 dark:from-teal-900/30 dark:to-blue-900/30 border border-teal-200 dark:border-teal-800 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                Architecture
+              </span>
+            </div>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-4 leading-tight">
+              <span className="bg-gradient-to-r from-teal-600 via-blue-600 to-teal-600 dark:from-teal-400 dark:via-blue-400 dark:to-teal-400 bg-clip-text text-transparent">
+                {howItWorksHeading}
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               {dict.architecture.description}
             </p>
           </motion.div>
 
-          <div className="space-y-12">
+          {/* Grid Layout - 2x2 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ArchitectureLayer
               number={1}
               title={dict.architecture.layer1Title}
               description={dict.architecture.layer1Description}
-              icon={Activity}
               delay={0}
             />
 
@@ -233,7 +306,6 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
               number={2}
               title={dict.architecture.layer2Title}
               description={dict.architecture.layer2Description}
-              icon={Wifi}
               delay={0.1}
             />
 
@@ -241,7 +313,6 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
               number={3}
               title={dict.architecture.layer3Title}
               description={dict.architecture.layer3Description}
-              icon={Database}
               delay={0.2}
             />
 
@@ -249,7 +320,6 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
               number={4}
               title={dict.architecture.layer4Title}
               description={dict.architecture.layer4Description}
-              icon={BrainCircuit}
               delay={0.3}
             />
           </div>
@@ -259,7 +329,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
       {/* Key Features & Validation */}
       <section
         id="reliability"
-        className="relative z-20 isolate py-20 px-4 sm:px-6 lg:px-8 bg-background"
+        className="relative z-20 isolate py-12 px-4 sm:px-6 lg:px-8 bg-background"
       >
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -327,7 +397,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
                 <div className="text-sm text-muted-foreground mt-1">{dict.features.realTimeMqtt}</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">5+ Sensors</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">20+ Sensors</div>
                 <div className="text-foreground font-medium">{dict.features.multiParameter}</div>
                 <div className="text-sm text-muted-foreground mt-1">{dict.features.comprehensiveMonitoring}</div>
               </div>
@@ -336,111 +406,6 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-teal-700 via-blue-700 to-slate-900 text-white">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
-          <motion.div
-            variants={revealVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="space-y-4 max-w-3xl"
-          >
-            <h2 className="text-4xl sm:text-5xl font-bold leading-tight">{dict.cta.title}</h2>
-            <p className="text-lg text-white/80">
-              {dict.cta.description}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                size="lg"
-                className="h-12 px-6 text-lg bg-white text-slate-900 hover:bg-slate-100"
-                onClick={() => window.location.assign(`/${lang}/sign-in`)}
-              >
-                {dict.cta.button}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-12 px-6 text-lg border-white/70 text-white hover:bg-white/10"
-                  >
-                    {contactCopy.talkToUs}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-xl border border-white/25 bg-white/90 text-foreground shadow-2xl backdrop-blur-2xl dark:border-slate-700 dark:bg-slate-900/90">
-                  <DialogHeader className="space-y-2">
-                    <DialogTitle className="text-2xl font-semibold text-foreground">{contactCopy.header}</DialogTitle>
-                    <DialogDescription className="text-base text-muted-foreground">
-                      {contactCopy.tagline}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form className="space-y-4" onSubmit={handleContactSubmit}>
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-email" className="text-sm font-medium text-foreground">
-                        {contactCopy.emailLabel}
-                      </Label>
-                      <Input
-                        id="contact-email"
-                        name="email"
-                        type="email"
-                        required
-                        autoComplete="email"
-                        className="bg-white/70 text-foreground shadow-sm ring-1 ring-white/40 placeholder:text-muted-foreground/70 dark:bg-slate-800/80 dark:ring-slate-700"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-message" className="text-sm font-medium text-foreground">
-                        {contactCopy.messageLabel}
-                      </Label>
-                      <textarea
-                        id="contact-message"
-                        name="message"
-                        required
-                        rows={5}
-                        className="min-h-[140px] w-full rounded-lg border border-border bg-white/70 px-3 py-2 text-sm text-foreground shadow-sm outline-none ring-1 ring-white/40 transition focus:border-primary focus:ring-2 focus:ring-primary/40 dark:bg-slate-800/80 dark:ring-slate-700"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={isSendingContact} className="w-full sm:w-auto">
-                        {isSendingContact ? contactCopy.sending : contactCopy.send}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </motion.div>
-
-          <motion.div
-            variants={revealVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="grid grid-cols-2 gap-4 w-full lg:w-auto"
-          >
-            {[{
-              label: 'Data freshness',
-              value: '<30s refresh'
-            }, {
-              label: 'Sensor uptime',
-              value: '99.8%'
-            }, {
-              label: 'Cities monitored',
-              value: '12'
-            }, {
-              label: 'Deploy time',
-              value: '48 hrs'
-            }].map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-white/20 bg-white/10 px-4 py-5 backdrop-blur">
-                <p className="text-sm uppercase tracking-wide text-white/70">{stat.label}</p>
-                <p className="mt-2 text-2xl font-semibold">{stat.value}</p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-background text-muted-foreground">
@@ -463,6 +428,23 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           </div>
         </div>
       </footer>
+
+      {/* Sticky Contact Button */}
+      <button
+        onClick={() => setIsContactModalOpen(true)}
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-8 z-50 inline-flex items-center justify-center gap-2 px-6 py-3 font-medium text-white transition-all duration-300 bg-gradient-to-r from-teal-600 to-blue-600 rounded-full shadow-lg hover:from-teal-700 hover:to-blue-700 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 hover:text-white"
+        aria-label="Open contact form"
+      >
+        <Mail className="h-5 w-5" />
+        <span className="hidden sm:inline">Contact Us</span>
+        <span className="sm:hidden">Contact</span>
+      </button>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal 
+        open={isContactModalOpen} 
+        onOpenChange={setIsContactModalOpen} 
+      />
     </div>
   );
 }

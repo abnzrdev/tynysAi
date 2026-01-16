@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { AuthPageShell } from "@/components/auth-page-shell";
 
 // Client-side translations
@@ -125,6 +126,20 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Handle chunk loading errors
+  useEffect(() => {
+    const handleChunkError = (event: ErrorEvent) => {
+      if (event.error?.name === "ChunkLoadError" || event.message?.includes("chunk")) {
+        console.error("Chunk load error detected:", event.error);
+        // Optionally show a user-friendly message
+        setError("Failed to load page resources. Please refresh the page.");
+      }
+    };
+
+    window.addEventListener("error", handleChunkError);
+    return () => window.removeEventListener("error", handleChunkError);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -175,8 +190,9 @@ export default function SignUpPage() {
   };
 
   return (
-    <AuthPageShell>
-      <Card className="w-full max-w-md border border-white/20 bg-background/60 text-foreground shadow-2xl backdrop-blur-md">
+    <ErrorBoundary>
+      <AuthPageShell>
+        <Card className="w-full max-w-md border border-white/20 bg-background/60 text-foreground shadow-2xl backdrop-blur-md">
         <CardHeader className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Image 
@@ -344,6 +360,7 @@ export default function SignUpPage() {
         </CardContent>
       </Card>
     </AuthPageShell>
+    </ErrorBoundary>
   );
 }
 
