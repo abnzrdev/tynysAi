@@ -5,10 +5,19 @@
     "goToDashboard": "Go to Dashboard"
   },
   "hero": {
-    "badge": "IoT Air Quality Monitoring",
+    "badge": "Air Quality Intelligence",
     "title": "Real-Time Air Quality",
     "subtitle": "Monitoring for Dynamic Environments",
-    "description": "Autonomous IoT sensing powered by the Tynys device. Deployable in buses, metros, and trolleybuses."
+    "description": "Autonomous real-time air quality monitoring for buses, metros, and trolleybuses.",
+    "getStarted": "Get Started",
+    "goToDashboard": "Go to Dashboard",
+    "learnMore": "Learn More"
+  },
+  "heroPillars": {
+    "fewShot": "Few-shot structure examples",
+    "optimization": "Latency & Cost optimization",
+    "structuredOutput": "Structured output (JSON/XML)",
+    "security": "Security/Prompt Injection guarding"
   },
   "metrics": {
     "realTime": "Real-Time",
@@ -35,42 +44,42 @@
   },
   "howItWorks": "How it Works",
   "architecture": {
-    "title": "How It Works",
-    "description": "Four hierarchical layers working in harmony to deliver reliable, real-time air quality insights",
-    "layer1Title": "Sensing & Preprocessing",
-    "layer1Description": "Tynys IoT Device. Localized acquisition, signal filtering, and onboard processing for accurate environmental readings.",
-    "layer2Title": "Communication",
-    "layer2Description": "MQTT over Wi-Fi. Buffer-based fallback ensures zero data loss during connectivity drops, maintaining data integrity.",
+    "title": "System Architecture",
+    "description": "Four-layer architecture: mobile sensing, wireless communication, cloud infrastructure, and ML analytics",
+    "layer1Title": "Mobile Sensing & Preprocessing",
+    "layer1Description": "Tynys IoT device with Raspberry Pi Zero 2 W. CO₂, PM2.5, PM10, temperature, and humidity sensors. 60s sampling with 5-point moving average filter.",
+    "layer2Title": "Wireless Communication",
+    "layer2Description": "MQTT over Wi-Fi. Buffer-based fallback preserves data during connectivity interruptions, ensuring temporal continuity.",
     "layer3Title": "Cloud Infrastructure",
-    "layer3Description": "Structured SQL Database & Web Dashboard. Scalable storage with secure multi-user access for seamless collaboration.",
+    "layer3Description": "Structured SQL database and web dashboard. Real-time visualization with filtering by location, timestamp, and transport type.",
     "layer4Title": "Machine Learning & Analytics",
-    "layer4Description": "Pollution classification using XGBoost & Random Forest. Anomaly detection for smarter transit decisions and predictive insights."
+    "layer4Description": "Pollution classification using logistic regression, decision tree, random forest, and XGBoost. Real-time predictions and anomaly detection."
   },
   "features": {
-    "title": "Research-Grade Reliability",
-    "description": "Rigorously benchmarked against commercial reference-grade monitors",
+    "title": "Validated Performance",
+    "description": "Benchmarked against Qingping Air Quality Monitor Gen 2 with strong correlation (R² = 0.89–0.95 for PM2.5)",
     "logisticRegression": "Logistic Regression",
-    "logisticDescription": "Binary classification for pollution threshold detection and alert triggering",
+    "logisticDescription": "Binary classification for pollution threshold detection",
     "decisionTree": "Decision Tree",
-    "decisionTreeDescription": "Interpretable rule-based classification for regulatory compliance",
+    "decisionTreeDescription": "Rule-based classification for regulatory compliance",
     "randomForest": "Random Forest",
-    "randomForestDescription": "Ensemble learning for robust multi-class pollution categorization",
+    "randomForestDescription": "Ensemble learning for multi-class pollution categorization",
     "xgboost": "XGBoost",
-    "xgboostDescription": "Gradient boosting for high-accuracy predictive analytics",
+    "xgboostDescription": "Gradient boosting for predictive analytics",
     "dataReliability": "Data Reliability",
-    "withBufferFallback": "With buffer fallback",
-    "updateFrequency": "Update Frequency",
-    "realTimeMqtt": "Real-time MQTT streaming",
-    "multiParameter": "Multi-Parameter",
-    "comprehensiveMonitoring": "Comprehensive monitoring"
+    "withBufferFallback": "Buffer fallback mechanism",
+    "updateFrequency": "Sampling Interval",
+    "realTimeMqtt": "60s intervals, MQTT streaming",
+    "multiParameter": "Sensor Suite",
+    "comprehensiveMonitoring": "CO₂, PM2.5, PM10, temperature, humidity"
   },
   "cta": {
-    "title": "Ready to Transform Your Transit System?",
-    "description": "Join the future of smart, data-driven public transportation",
+    "title": "Deploy Tynys Across Your Fleet",
+    "description": "Autonomous air quality monitoring for buses, metros, and trolleybuses with cloud-connected analytics",
     "button": "Get Started Today"
   },
   "footer": {
-    "description": "Real-time IoT air quality monitoring for dynamic environments",
+    "description": "Autonomous real-time air quality monitoring for buses, metros, and trolleybuses",
     "copyright": "All rights reserved."
   },
   "dashboardPage": {
