@@ -24,7 +24,7 @@ export function AuthPageShell({ children }: AuthPageShellProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-10 pointer-events-none">
         <video
           ref={videoRef}
           className="h-full w-full object-cover"

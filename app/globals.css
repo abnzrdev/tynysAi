@@ -73,7 +73,11 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+  .sidebar-layout,
+  .dashboard-shell {
+    overflow-x: hidden;
   }
   html {
     font-size: 18px;
