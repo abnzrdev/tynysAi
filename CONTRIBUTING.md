@@ -13,13 +13,34 @@ cd tynys
 npm install
 
 # 3. Set up environment variables
-cp .env.local.example .env.local
-# Edit .env.local with your database credentials
+cp .env.example .env.local
+# Edit .env.local with your actual database credentials and secrets
+```
 
+### Environment Variables Setup
 
+The `.env.example` file contains all required environment variables. Copy it and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+**Required variables:**
+- `NEXTAUTH_URL` - URL where your app runs (default: `http://localhost:3000`)
+- `DB_URL` - PostgreSQL connection string (format: `postgresql://USER:PASSWORD@HOST:PORT/DATABASE`)
+- `NEXTAUTH_SECRET` - Secret for NextAuth session encryption (generate a random string)
+- `IOT_DEVICE_SECRET` - Secret for IoT device API authentication
+
+**Optional variables for seeding:**
+- `SEED_EMAIL` - Admin account email for initial setup
+- `SEED_PASSWORD` - Admin account password
+- `SEED_NAME` - Admin account display name
+
+**⚠️ Important:** Never commit `.env.local` - it contains sensitive secrets and is already in `.gitignore`.
+
+```bash
 # 4. Set up database (⚠️ destructive: wipes sensor_readings data)
 npx drizzle-kit push
-
 
 # 5. Run development server
 npm run dev
@@ -189,6 +210,8 @@ Before submitting your PR, verify:
 - [ ] Commit messages follow conventional format
 - [ ] PR description clearly explains changes
 - [ ] No sensitive data (API keys, passwords) in code
+- [ ] `.env.local` is NOT committed (check `.gitignore` is respected)
+- [ ] If adding new env variables, update `.env.example` file
 
 ## 🐛 Reporting Issues
 

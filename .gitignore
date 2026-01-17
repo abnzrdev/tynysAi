@@ -21,7 +21,10 @@ yarn-error.log*
 env.text
 .env
 .env.local
-.env.*
+.env.*.local
+
+# Allow .env.example for contributors
+!.env.example
 
 # Ignore large or generated media
 public/media/*.mp4
