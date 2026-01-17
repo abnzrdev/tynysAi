@@ -230,6 +230,49 @@ Before submitting your PR, verify:
 - [ ] `.env.local` is NOT committed (check `.gitignore` is respected)
 - [ ] If adding new env variables, update `.env.example` file
 
+## Using an External (remote) Database and Sharing Seeded Data
+
+If the maintainer will run the app against a remote (external) PostgreSQL instance and you want them to see your seeded data, follow these steps.
+
+1. Create a dump locally (this file contains data; do NOT commit it):
+
+```bash
+# Run on the machine that can reach the database
+PGPASSWORD=password123 pg_dump -h localhost -U admin -d tynysdb -Fc -f tynys_prod_dump.dump
+```
+
+2. Transfer the dump securely to the maintainer (do NOT send via plain email or commit to git):
+
+- Use a secure channel: SFTP, Secure shared drive, or a password-protected transfer (1Password/Bitwarden file sharing, or an encrypted cloud link).
+
+3. Maintainer restores the dump to the production DB host (example):
+
+```bash
+# On the maintainer's host where Postgres is accessible
+PGPASSWORD=<target_pass> pg_restore -h <target_host> -U <target_user> -d tynysdb -v tynys_prod_dump.dump
+```
+
+4. Update app environment on the maintainer host to point to the external DB (example `DB_URL`):
+
+```
+DB_URL=postgresql://admin:<target_pass>@<target_host>:5432/tynysdb
+```
+
+5. Start or restart the application on the maintainer host:
+
+```bash
+docker-compose up -d --build
+# or if they run without docker:
+NODE_ENV=production npm run build && NODE_ENV=production node .next/standalone/server.js
+```
+
+Security reminders:
+- Do not commit real credentials or the dump to the repository.
+- Rotate production credentials after sharing if necessary.
+- Prefer creating a separate DB user with limited permissions for collaborators.
+
+If you want me to create `tynys_prod_dump.dump` now, I can (it will be saved in the project root and ignored by `.gitignore`).
+
 ## 🐛 Reporting Issues
 
 Found a bug? Please [open an issue](https://github.com/yourusername/tynys/issues) with:

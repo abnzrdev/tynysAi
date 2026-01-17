@@ -56,6 +56,10 @@ v0-landing-page-with-video/
 .DS_Store
 *.pem
 
+# Database dumps (never commit production dumps)
+*.dump
+.sql
+
 # debug
 npm-debug.log*
 yarn-debug.log*
