@@ -27,6 +27,7 @@ env.text
 # Allow .env.example files for contributors (no real secrets)
 !.env.example
 !.env.production.example
+!.env.docker.example
 
 # Ignore large or generated media
 public/media/*.mp4

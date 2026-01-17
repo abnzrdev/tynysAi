@@ -71,7 +71,38 @@ npm run seed
 
 ## Deployment Options
 
-### Option 1: Docker Deployment
+### Option 1: Docker Compose (Recommended)
+
+The easiest way to deploy with Docker Compose, which handles both the app and database:
+
+```bash
+# Copy the docker environment example
+cp .env.docker.example .env
+
+# Edit .env with your secrets
+nano .env  # or use your preferred editor
+
+# Generate secure secrets
+openssl rand -base64 32  # Use for NEXTAUTH_SECRET
+openssl rand -base64 32  # Use for IOT_DEVICE_SECRET
+
+# Start the services
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f app
+
+# Stop services
+docker-compose down
+```
+
+The compose file includes:
+- PostgreSQL database (port 5432)
+- Next.js application (port 3000)
+- Automatic healthchecks
+- Persistent database volume
+
+### Option 2: Docker Build & Run Manually
 
 ```bash
 # Build the production Docker image
@@ -86,7 +117,7 @@ docker run -d \
   tynys-ai:latest
 ```
 
-### Option 2: Traditional Deployment
+### Option 3: Traditional Deployment
 
 ```bash
 # Install dependencies
