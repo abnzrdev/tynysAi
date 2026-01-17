@@ -21,6 +21,8 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ARG DB_URL
+ENV DB_URL=$DB_URL
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
