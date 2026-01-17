@@ -38,6 +38,23 @@ cp .env.example .env.local
 
 **⚠️ Important:** Never commit `.env.local` - it contains sensitive secrets and is already in `.gitignore`.
 
+### Production Deployment
+
+For deploying to production, use `.env.production.example` as a template:
+
+```bash
+cp .env.production.example .env.production
+# Edit .env.production with actual production database credentials
+```
+
+**Key differences for production:**
+- `NEXTAUTH_URL` should be your production domain (e.g., `https://yourdomain.com`)
+- `DB_URL` should point to your production PostgreSQL database
+- All secrets must be secure and randomly generated
+- Generate `NEXTAUTH_SECRET` with: `openssl rand -base64 32`
+
+**⚠️ CRITICAL:** Never push `.env.production` to git - it's ignored for security reasons.
+
 ```bash
 # 4. Set up database (⚠️ destructive: wipes sensor_readings data)
 npx drizzle-kit push
