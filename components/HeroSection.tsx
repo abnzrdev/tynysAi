@@ -115,9 +115,11 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
             {Array.from({ length: 8 }).map((_, i) => {
               const baseY = 50 + Math.sin(i) * 15;
               const baseX = i * 12.5;
+              const initialPath = `M ${baseX} ${baseY} Q ${baseX + 10} ${baseY + Math.sin(i) * 10} ${baseX + 20} ${baseY}`;
               return (
                 <motion.path
                   key={`wind-${i}`}
+                  d={initialPath}
                   stroke="url(#windGradient)"
                   strokeWidth="0.3"
                   fill="none"
@@ -126,9 +128,9 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                     pathLength: 1,
                     opacity: [0.2, 0.5, 0.2],
                     d: [
-                      `M ${baseX} ${baseY} Q ${baseX + 10} ${baseY + Math.sin(i) * 10} ${baseX + 20} ${baseY}`,
+                      initialPath,
                       `M ${baseX} ${baseY + Math.sin(i + 0.5) * 5} Q ${baseX + 10} ${baseY + Math.sin(i + 0.5) * 15} ${baseX + 20} ${baseY + Math.sin(i + 0.5) * 5}`,
-                      `M ${baseX} ${baseY} Q ${baseX + 10} ${baseY + Math.sin(i + 1) * 10} ${baseX + 20} ${baseY}`,
+                      initialPath,
                     ],
                   }}
                   transition={{

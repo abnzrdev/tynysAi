@@ -193,7 +193,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
         
         {/* SVG Decorative Elements - Connecting Flow */}
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 dark:opacity-10" aria-hidden="true" style={{ zIndex: 0 }}>
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 dark:opacity-10" aria-hidden="true" style={{ zIndex: 0 }} viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="rgb(20, 184, 166)" stopOpacity="0.4" />
@@ -207,11 +207,11 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           
           {/* Flow path: 1 -> 2 -> 4 -> 3 */}
           <motion.path
-            d="M 20% 25% L 50% 25% L 50% 50% L 80% 50% L 80% 75%"
+            d="M 20 25 L 50 25 L 50 50 L 80 50 L 80 75"
             stroke="url(#connectionGradient)"
-            strokeWidth="2"
+            strokeWidth="0.5"
             fill="none"
-            strokeDasharray="8,4"
+            strokeDasharray="2,1"
             markerEnd="url(#arrowhead)"
             initial={{ pathLength: 0, opacity: 0 }}
             whileInView={{ pathLength: 1, opacity: 1 }}
@@ -221,11 +221,11 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           
           {/* Connection from 1 to 3 */}
           <motion.path
-            d="M 20% 25% Q 20% 50%, 20% 75%"
+            d="M 20 25 Q 20 50, 20 75"
             stroke="url(#connectionGradient)"
-            strokeWidth="1.5"
+            strokeWidth="0.4"
             fill="none"
-            strokeDasharray="6,3"
+            strokeDasharray="1.5,0.75"
             initial={{ pathLength: 0, opacity: 0 }}
             whileInView={{ pathLength: 1, opacity: 1 }}
             viewport={{ once: true }}
@@ -234,11 +234,11 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           
           {/* Connection from 2 to 4 */}
           <motion.path
-            d="M 80% 25% Q 80% 50%, 80% 75%"
+            d="M 80 25 Q 80 50, 80 75"
             stroke="url(#connectionGradient)"
-            strokeWidth="1.5"
+            strokeWidth="0.4"
             fill="none"
-            strokeDasharray="6,3"
+            strokeDasharray="1.5,0.75"
             initial={{ pathLength: 0, opacity: 0 }}
             whileInView={{ pathLength: 1, opacity: 1 }}
             viewport={{ once: true }}
@@ -248,17 +248,17 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           {/* Decorative nodes at card positions */}
           {[1, 2, 3, 4].map((num, idx) => {
             const positions = [
-              { x: '20%', y: '25%' }, // Layer 1
-              { x: '80%', y: '25%' }, // Layer 2
-              { x: '20%', y: '75%' }, // Layer 3
-              { x: '80%', y: '75%' }, // Layer 4
+              { x: 20, y: 25 }, // Layer 1
+              { x: 80, y: 25 }, // Layer 2
+              { x: 20, y: 75 }, // Layer 3
+              { x: 80, y: 75 }, // Layer 4
             ];
             return (
               <motion.circle
                 key={num}
                 cx={positions[idx].x}
                 cy={positions[idx].y}
-                r="4"
+                r="1"
                 fill="rgb(20, 184, 166)"
                 opacity="0.6"
                 initial={{ scale: 0, opacity: 0 }}
