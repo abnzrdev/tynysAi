@@ -13,13 +13,51 @@ cd tynys
 npm install
 
 # 3. Set up environment variables
-cp .env.local.example .env.local
-# Edit .env.local with your database credentials
+cp .env.example .env.local
+# Edit .env.local with your actual database credentials and secrets
+```
 
+### Environment Variables Setup
 
+The `.env.example` file contains all required environment variables. Copy it and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+**Required variables:**
+- `NEXTAUTH_URL` - URL where your app runs (default: `http://localhost:3000`)
+- `DB_URL` - PostgreSQL connection string (format: `postgresql://USER:PASSWORD@HOST:PORT/DATABASE`)
+- `NEXTAUTH_SECRET` - Secret for NextAuth session encryption (generate a random string)
+- `IOT_DEVICE_SECRET` - Secret for IoT device API authentication
+
+**Optional variables for seeding:**
+- `SEED_EMAIL` - Admin account email for initial setup
+- `SEED_PASSWORD` - Admin account password
+- `SEED_NAME` - Admin account display name
+
+**⚠️ Important:** Never commit `.env.local` - it contains sensitive secrets and is already in `.gitignore`.
+
+### Production Deployment
+
+For deploying to production, use `.env.production.example` as a template:
+
+```bash
+cp .env.production.example .env.production
+# Edit .env.production with actual production database credentials
+```
+
+**Key differences for production:**
+- `NEXTAUTH_URL` should be your production domain (e.g., `https://yourdomain.com`)
+- `DB_URL` should point to your production PostgreSQL database
+- All secrets must be secure and randomly generated
+- Generate `NEXTAUTH_SECRET` with: `openssl rand -base64 32`
+
+**⚠️ CRITICAL:** Never push `.env.production` to git - it's ignored for security reasons.
+
+```bash
 # 4. Set up database (⚠️ destructive: wipes sensor_readings data)
 npx drizzle-kit push
-
 
 # 5. Run development server
 npm run dev
@@ -189,6 +227,51 @@ Before submitting your PR, verify:
 - [ ] Commit messages follow conventional format
 - [ ] PR description clearly explains changes
 - [ ] No sensitive data (API keys, passwords) in code
+- [ ] `.env.local` is NOT committed (check `.gitignore` is respected)
+- [ ] If adding new env variables, update `.env.example` file
+
+## Using an External (remote) Database and Sharing Seeded Data
+
+If the maintainer will run the app against a remote (external) PostgreSQL instance and you want them to see your seeded data, follow these steps.
+
+1. Create a dump locally (this file contains data; do NOT commit it):
+
+```bash
+# Run on the machine that can reach the database
+PGPASSWORD=password123 pg_dump -h localhost -U admin -d tynysdb -Fc -f tynys_prod_dump.dump
+```
+
+2. Transfer the dump securely to the maintainer (do NOT send via plain email or commit to git):
+
+- Use a secure channel: SFTP, Secure shared drive, or a password-protected transfer (1Password/Bitwarden file sharing, or an encrypted cloud link).
+
+3. Maintainer restores the dump to the production DB host (example):
+
+```bash
+# On the maintainer's host where Postgres is accessible
+PGPASSWORD=<target_pass> pg_restore -h <target_host> -U <target_user> -d tynysdb -v tynys_prod_dump.dump
+```
+
+4. Update app environment on the maintainer host to point to the external DB (example `DB_URL`):
+
+```
+DB_URL=postgresql://admin:<target_pass>@<target_host>:5432/tynysdb
+```
+
+5. Start or restart the application on the maintainer host:
+
+```bash
+docker-compose up -d --build
+# or if they run without docker:
+NODE_ENV=production npm run build && NODE_ENV=production node .next/standalone/server.js
+```
+
+Security reminders:
+- Do not commit real credentials or the dump to the repository.
+- Rotate production credentials after sharing if necessary.
+- Prefer creating a separate DB user with limited permissions for collaborators.
+
+If you want me to create `tynys_prod_dump.dump` now, I can (it will be saved in the project root and ignored by `.gitignore`).
 
 ## 🐛 Reporting Issues
 
