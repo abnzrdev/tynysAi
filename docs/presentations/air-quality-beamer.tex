@@ -1,0 +1,186 @@
+\documentclass{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\title{Low-Cost IoT Platform for In-Cabin Air Quality Monitoring}
+\subtitle{Pilot Deployment and Machine Learning Feasibility Study}
+\author{Abenezer Alemayehu}
+\institute{Almaty, Kazakhstan}
+\date{\today}
+
+\begin{document}
+
+% Title Slide
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% Problem Statement
+\begin{frame}{Why In-Cabin Air Quality Matters}
+\begin{itemize}
+  \item Poor air quality affects health, comfort, and concentration
+  \item Vehicles and closed spaces accumulate pollutants quickly
+  \item Professional monitoring systems are expensive and static
+\end{itemize}
+\end{frame}
+
+% Project Overview
+\begin{frame}{Project Overview}
+\begin{itemize}
+  \item Low-cost IoT device for real-time air quality monitoring
+  \item Live web platform for visualization
+  \item Machine learning used for automatic air quality classification
+  \item Pilot case study conducted in Almaty
+\end{itemize}
+\end{frame}
+
+% System Architecture
+\begin{frame}{System Architecture}
+\begin{itemize}
+  \item IoT sensor device (Tynys)
+  \item Cloud database
+  \item Web-based dashboard
+  \item Machine learning inference layer
+\end{itemize}
+\end{frame}
+
+% Measured Parameters
+\begin{frame}{Measured Parameters}
+\begin{columns}
+\column{0.5\textwidth}
+\begin{itemize}
+  \item CO$_2$
+  \item PM$_{2.5}$
+  \item PM$_{10}$
+  \item PM$_1$
+  \item Temperature
+  \item Humidity
+\end{itemize}
+
+\column{0.5\textwidth}
+\begin{itemize}
+  \item VOC
+  \item CO
+  \item O$_3$
+  \item NO$_2$
+  \item CH$_2$O
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% Data Format
+\begin{frame}[fragile]{Data Transmission Format}
+Sensor data is sent in JSON format:
+\begin{verbatim}
+{
+ "device_id": "lab01",
+ "site": "AGI_Lab",
+ "pm25": 25.7,
+ "pm10": 43.1,
+ "co2": 412,
+ "temp": 21.8,
+ "hum": 46.2
+}
+\end{verbatim}
+\end{frame}
+
+% Sampling and Filtering
+\begin{frame}{Sampling and Noise Reduction}
+\begin{itemize}
+  \item Data sampled every 60 seconds
+  \item 5-point moving average filter applied
+\end{itemize}
+
+\[
+  y = \frac{x_1 + x_2 + x_3 + x_4 + x_5}{5}
+\]
+
+\end{frame}
+
+% Machine Learning
+\begin{frame}{Machine Learning Approach}
+The system automatically classifies air quality levels:
+\begin{itemize}
+  \item Low / Moderate / High
+  \item Safe / Unsafe
+\end{itemize}
+\end{frame}
+
+% Algorithms
+\begin{frame}{Algorithms Used}
+\begin{itemize}
+  \item Logistic Regression
+  \item Decision Tree
+  \item Random Forest
+  \item XGBoost (main model)
+\end{itemize}
+\end{frame}
+
+% Calibration
+\begin{frame}{Sensor Calibration}
+\begin{itemize}
+  \item Pre-deployment calibration conducted indoors
+  \item Tynys device co-located with Qingping Air Monitor Gen 2
+  \item One-hour synchronized measurement session
+  \item Baseline offsets minimized
+\end{itemize}
+\end{frame}
+
+% Reference Device
+\begin{frame}{Reference Device Validation}
+\begin{itemize}
+  \item Qingping monitor evaluated by SCAQMD
+  \item Compared against FEM-grade instruments
+  \item PM$_{2.5}$ correlation: R$^2$ = 0.89 -- 0.95
+  \item High data recovery and low error
+\end{itemize}
+\end{frame}
+
+% Mobile Validation
+\begin{frame}{In-Cabin Validation}
+\begin{itemize}
+  \item Both devices installed inside a passenger cabin
+  \item Measurements recorded simultaneously
+  \item PM, CO$_2$, temperature, and humidity trends closely matched
+\end{itemize}
+\end{frame}
+
+% Web Platform
+\begin{frame}{Web-Based Dashboard}
+\begin{itemize}
+  \item Live visualization of sensor data
+  \item Real-time air quality classification
+  \item User-friendly interface for monitoring
+\end{itemize}
+\end{frame}
+
+% Results Summary
+\begin{frame}{Key Outcomes}
+\begin{itemize}
+  \item Reliable low-cost sensing performance
+  \item Strong agreement with reference monitor
+  \item Machine learning feasible for automatic classification
+  \item Suitable for mobile and in-cabin environments
+\end{itemize}
+\end{frame}
+
+% Future Work
+\begin{frame}{Future Improvements}
+\begin{itemize}
+  \item Larger dataset collection
+  \item Long-term sensor drift analysis
+  \item Advanced ML models
+  \item Integration with alerts and recommendations
+\end{itemize}
+\end{frame}
+
+% Closing Slide
+\begin{frame}{Conclusion}
+\centering
+Low-cost IoT + Machine Learning\\
+\bigskip
+A practical solution for smart air quality monitoring
+\end{frame}
+
+\end{document}

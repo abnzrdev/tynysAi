@@ -1,0 +1,13 @@
+\frametitle{Data Transmission Format}
+Sensor data is sent in JSON format:
+\begin{verbatim}
+{
+ "device_id": "lab01",
+ "site": "AGI_Lab",
+ "pm25": 25.7,
+ "pm10": 43.1,
+ "co2": 412,
+ "temp": 21.8,
+ "hum": 46.2
+}
+\end{verbatim}
