@@ -2,6 +2,7 @@ import { eq, desc, count } from 'drizzle-orm';
 import { db } from './db';
 import { iotData, sensorReadings, users, sensors } from './db/schema';
 import type { SensorReading } from './csv-parser';
+import { classifyAqiCategory } from './aqi';
 
 /**
  * Creates a new user in the database
@@ -145,6 +146,8 @@ export async function getRecentSensorReadings(userId: number, limit: number = 10
         locationStr = reading.location;
       }
 
+      const { category: aqiCategory, rule: aqiRule } = classifyAqiCategory(reading.pm25, reading.pm10);
+
       return {
         id: reading.id,
         timestamp: reading.timestamp instanceof Date 
@@ -155,6 +158,10 @@ export async function getRecentSensorReadings(userId: number, limit: number = 10
         sensorId: reading.deviceId || reading.sensorId?.toString() || '', // Use deviceId if available, fallback to sensorId
         // Use legacy value field if available, otherwise use pm25, fallback to pm10, pm1, or co2
         value: reading.value ?? reading.pm25 ?? reading.pm10 ?? reading.pm1 ?? reading.co2 ?? 0,
+        pm25: reading.pm25,
+        pm10: reading.pm10,
+        aqiCategory,
+        aqiRule,
         location: locationStr,
         transportType: reading.transportType,
         ingestedAt: reading.ingestedAt instanceof Date 
