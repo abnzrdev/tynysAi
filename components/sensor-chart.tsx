@@ -2,14 +2,14 @@
 
 import { useMemo, type ReactNode } from "react";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
+  Bar,
+  BarChart,
   CartesianGrid,
-  Tooltip,
   Legend,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,63 @@ interface SensorReading {
 interface SensorChartProps {
   data: SensorReading[];
   actionSlot?: ReactNode;
+}
+
+type SensorChartDatum = {
+  timestampLabel: string;
+  tickLabel: string;
+  value: number;
+  sensorId: string;
+  location: string | null;
+  transportType: string | null;
+  fullTimestamp: string;
+};
+
+type SensorBarTooltipProps = {
+  active?: boolean;
+  payload?: Array<{ payload: SensorChartDatum }>;
+};
+
+const barTimestampFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const barTickFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "2-digit",
+});
+
+function formatTimestampLabel(timestamp: string) {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? timestamp : barTimestampFormatter.format(date);
+}
+
+function formatTickLabel(timestamp: string) {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? timestamp : barTickFormatter.format(date);
+}
+
+function SensorBarTooltip({ active, payload }: SensorBarTooltipProps) {
+  if (!active || !payload?.length) return null;
+
+  const reading = payload[0].payload as SensorChartDatum;
+
+  return (
+    <div className="rounded-lg border bg-background/90 p-3 shadow-sm">
+      <p className="text-xs text-muted-foreground">{reading.timestampLabel}</p>
+      <p className="text-sm font-semibold">Value {reading.value.toFixed(2)}</p>
+      <p className="text-xs text-muted-foreground">Sensor {reading.sensorId}</p>
+      {reading.location && (
+        <p className="text-xs text-muted-foreground">Location {reading.location}</p>
+      )}
+      {reading.transportType && (
+        <p className="text-xs text-muted-foreground">Type {reading.transportType}</p>
+      )}
+    </div>
+  );
 }
 
 export function SensorChart({ data, actionSlot }: SensorChartProps) {
@@ -51,7 +108,8 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       )
       .map((reading) => ({
-        timestamp: new Date(reading.timestamp).toLocaleString(),
+        timestampLabel: formatTimestampLabel(reading.timestamp),
+        tickLabel: formatTickLabel(reading.timestamp),
         value: reading.value,
         sensorId: reading.sensorId,
         location: reading.location,
@@ -198,16 +256,17 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={380}>
-              <LineChart
+              <BarChart
                 data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 12, right: 24, left: 12, bottom: 12 }}
+                barGap={4}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
-                  dataKey="timestamp"
-                  angle={-45}
+                  dataKey="tickLabel"
+                  angle={-35}
                   textAnchor="end"
-                  height={100}
+                  height={80}
                   tick={{
                     fontSize: 12,
                     fill: "hsl(var(--muted-foreground))",
@@ -229,26 +288,18 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
                       'JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                   }}
                   stroke="hsl(var(--border))"
+                  tickFormatter={(value: number) => value.toFixed(0)}
                 />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
-                />
+                <Tooltip content={<SensorBarTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.35)" }} />
                 <Legend />
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="value"
-                  stroke="rgb(59, 130, 246)"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: "rgb(59, 130, 246)", strokeWidth: 2, stroke: "white" }}
-                  activeDot={{ r: 6, fill: "rgb(59, 130, 246)" }}
                   name="Sensor Value"
+                  fill="hsl(var(--chart-1))"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={32}
                 />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>

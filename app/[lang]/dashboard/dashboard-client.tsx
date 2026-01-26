@@ -1,16 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DashboardMapPanel, type StatLabels, type StatValues } from "./map-panel-client";
+import { DashboardMapPanel, type StatValues } from "./map-panel-client";
 import { SensorChart } from "@/components/sensor-chart";
 import { SensorDistribution, type SensorSlice } from "@/components/sensor-distribution";
+import { SensorAnalytics } from "@/components/analytics/SensorAnalytics";
+import { ParticulateMetrics } from "@/components/dashboard/ParticulateMetrics";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Filter } from "lucide-react";
+import { Activity, Database, Filter, Radio, TrendingUp } from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 
 export type SensorReading = {
@@ -121,12 +123,15 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     };
   }, [filteredReadings]);
 
-  const statLabels: StatLabels = {
-    totalDataPoints: dict.totalDataPoints,
-    activeSensors: dict.activeSensors,
-    recentReadings: dict.recentReadings,
-    averageValue: dict.averageValue,
-  };
+  const statItems = useMemo(
+    () => [
+      { label: dict.totalDataPoints, value: statValues.totalDataPoints, icon: Database },
+      { label: dict.activeSensors, value: statValues.activeSensors, icon: Radio },
+      { label: dict.recentReadings, value: statValues.recentReadings, icon: Activity },
+      { label: dict.averageValue, value: statValues.avgSensorValue, icon: TrendingUp },
+    ],
+    [dict, statValues]
+  );
 
   const sensorSlices: SensorSlice[] = useMemo(() => {
     const counts = filteredReadings.reduce((acc, reading) => {
@@ -282,12 +287,31 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         <DashboardMapPanel
           readings={filteredReadings}
           emptyMapText={dict.noGeocodedData}
-          statLabels={statLabels}
-          statValues={statValues}
           recentActivity={activityFeed}
           feedTitle={dict.recentIotData}
           feedEmptyText={dict.noRecentActivity}
         />
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {statItems.map((stat, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 rounded-xl border bg-card/90 px-3 py-3 shadow-sm"
+            >
+              <stat.icon className="h-4 w-4 text-primary" />
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {stat.label}
+                </p>
+                <p className="font-mono text-xl font-semibold leading-tight sm:text-2xl">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          <ParticulateMetrics />
+        </div>
       </section>
 
       <section id="stats-section" className="space-y-8 scroll-mt-28">
@@ -369,6 +393,10 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
             </CardContent>
           </Card>
         </div>
+      </section>
+
+      <section id="analytics-section" className="space-y-6 scroll-mt-28">
+        <SensorAnalytics data={filteredReadings} />
       </section>
     </div>
   );

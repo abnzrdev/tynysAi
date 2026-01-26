@@ -9,6 +9,12 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type MapReading = {
   location?: string | null;
@@ -18,12 +24,21 @@ export type MapReading = {
 };
 
 const AQI_BREAKPOINTS = [
-  { limit: 12, color: "#22c55e", label: "Good", tw: "bg-green-500" },
-  { limit: 35.4, color: "#84cc16", label: "Moderate", tw: "bg-lime-500" },
-  { limit: 55.4, color: "#eab308", label: "USG", tw: "bg-amber-500" },
-  { limit: 150.4, color: "#f97316", label: "Unhealthy", tw: "bg-orange-500" },
-  { limit: 250.4, color: "#ef4444", label: "Very Unhealthy", tw: "bg-red-500" },
-  { limit: Infinity, color: "#7e22ce", label: "Hazardous", tw: "bg-purple-700" },
+  { limit: 12, color: "#22c55e", label: "Good", range: "0-50", tw: "bg-green-500" },
+  { limit: 35.4, color: "#84cc16", label: "Moderate", range: "51-100", tw: "bg-lime-500" },
+  { limit: 55.4, color: "#eab308", label: "USG", range: "101-150", tw: "bg-amber-500" },
+  { limit: 150.4, color: "#f97316", label: "Unhealthy", range: "151-200", tw: "bg-orange-500" },
+  { limit: 250.4, color: "#ef4444", label: "Very Unhealthy", range: "201-300", tw: "bg-red-500" },
+  { limit: Infinity, color: "#7e22ce", label: "Hazardous", range: "300+", tw: "bg-purple-700" },
+];
+
+const AQI_LEVELS = [
+  { label: "Good", colorClass: "bg-[#22c55e]", range: "0-50" },
+  { label: "Moderate", colorClass: "bg-[#84cc16]", range: "51-100" },
+  { label: "USG", colorClass: "bg-[#eab308]", range: "101-150" },
+  { label: "Unhealthy", colorClass: "bg-[#f97316]", range: "151-200" },
+  { label: "Very Unhealthy", colorClass: "bg-[#ef4444]", range: "201-300" },
+  { label: "Hazardous", colorClass: "bg-[#7e22ce]", range: "300+" },
 ];
 
 const DEFAULT_CENTER: LatLngTuple = [37.0902, -95.7129];
@@ -208,37 +223,55 @@ export function AirQualityMap({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-slate-800/70 bg-background",
+        "relative flex h-full flex-col rounded-lg border border-slate-800/70 bg-background",
         heightClass,
         className
       )}
     >
-      <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-xl bg-background/90 px-3 py-2 shadow-lg ring-1 ring-slate-800/60">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {AQI_BREAKPOINTS.map((bp, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: bp.color }} />
-              <span className="font-medium">{bp.label}</span>
-            </div>
-          ))}
-        </div>
+      <div className="relative flex flex-wrap items-center gap-4 overflow-visible border-b border-slate-800/60 bg-background/80 px-4 py-2 backdrop-blur">
+        <LegendBar />
       </div>
 
-      <MapContainer
-        center={center}
-        zoom={5}
-        scrollWheelZoom
-        className="h-full w-full bg-background z-0"
-      >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <FitToMarkers points={points} />
-        {/* ClusterLayer uses the upstream leaflet.markercluster plugin directly */}
-        <ClusterLayer points={points} />
-      </MapContainer>
+      <div className="relative flex-1 overflow-hidden rounded-b-lg">
+        <MapContainer
+          center={center}
+          zoom={5}
+          scrollWheelZoom
+          className="h-full w-full bg-background z-0"
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FitToMarkers points={points} />
+          {/* ClusterLayer uses the upstream leaflet.markercluster plugin directly */}
+          <ClusterLayer points={points} />
+        </MapContainer>
+      </div>
     </div>
+  );
+}
+
+function LegendBar() {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        {AQI_LEVELS.map((level) => (
+          <Tooltip key={level.label}>
+            <TooltipTrigger asChild>
+              <div className="inline-flex cursor-default items-center gap-2">
+                <span className={cn("h-2.5 w-2.5 rounded-full", level.colorClass)} aria-hidden />
+                <span className="font-medium text-foreground/90">{level.label}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              <span className="text-muted-foreground">AQI Range: </span>
+              <span className="font-semibold">{level.range}</span>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
 

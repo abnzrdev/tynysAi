@@ -75,7 +75,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
     {
       name: "Analytics",
       icon: BarChart3,
-      href: "#analytics",
+      href: "#analytics-section",
       color: "text-amber-500",
     },
     {
