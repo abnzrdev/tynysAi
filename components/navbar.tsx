@@ -159,7 +159,7 @@ export function Navbar() {
     : "text-white";
 
   return (
-    <nav className={navBase} style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
+    <nav className={navBase}>
       <div className="container mx-auto px-6">
         <div className={`flex h-20 items-center justify-between transition-colors duration-300 ${textColorClass}`}>
           {/* Logo - Left Side */}
@@ -173,7 +173,7 @@ export function Navbar() {
                 className="drop-shadow-md"
                 priority
               />
-              <span className={logoTextClass} style={{ fontFamily: "'Ubuntu', 'Segoe UI', system-ui, sans-serif" }}>
+              <span className={logoTextClass}>
                 TynysAi
               </span>
             </Link>
