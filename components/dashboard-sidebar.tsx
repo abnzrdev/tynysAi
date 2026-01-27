@@ -104,7 +104,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
             {!isCollapsed && (
               <div className="flex flex-col">
                 <span className="text-lg font-bold">Tynys</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   IoT Platform
                 </span>
               </div>
@@ -135,14 +135,14 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium truncate">{user.name}</p>
+                <p className="text-base font-semibold truncate">{user.name}</p>
                 {isAdmin && (
-                  <Badge variant="default" className="text-xs">
+                  <Badge variant="default" className="text-sm">
                     Admin
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-sm text-muted-foreground truncate">
                 {user.email}
               </p>
             </div>
@@ -157,7 +157,7 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground text-[hsl(var(--foreground))]",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold transition-colors hover:bg-accent hover:text-accent-foreground text-[hsl(var(--foreground))]",
               isCollapsed && "justify-center"
             )}
           >
@@ -171,14 +171,14 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
       <div className="border-t border-border p-4 space-y-2">
         <div className={cn("flex items-center gap-2", isCollapsed && "flex-col")}>
           {!isCollapsed && (
-            <span className="text-sm font-medium flex-1">Theme</span>
+            <span className="text-base font-semibold flex-1">Theme</span>
           )}
           <DarkModeToggle />
         </div>
         <button
           onClick={handleSignOut}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 w-full cursor-pointer",
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold text-destructive transition-colors hover:bg-destructive/10 w-full cursor-pointer",
             isCollapsed && "justify-center"
           )}
         >

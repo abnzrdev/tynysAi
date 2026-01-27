@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
 import { Calendar as CalendarIcon, Download, RefreshCcw } from "lucide-react";
@@ -217,12 +216,6 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
     [filteredData]
   );
 
-  const tableRows = useMemo(() => {
-    return [...filteredData]
-      .sort((a, b) => b.timestampMs - a.timestampMs)
-      .slice(0, 8);
-  }, [filteredData]);
-
   const handleResetRange = () => setDateRange(undefined);
 
   const handleExport = async () => {
@@ -252,12 +245,10 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
   };
 
   return (
-    <div className="space-y-6" id="analytics">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.14em] text-muted-foreground">Analytics</p>
-          <h2 className="text-2xl font-semibold leading-tight">AQI Trends & Export</h2>
-          <p className="text-sm text-muted-foreground">Filter air quality history and export the exact range you need.</p>
+          <h2 className="text-2xl font-semibold leading-tight">AQI Analytics</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-mono">
@@ -290,36 +281,31 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
             <CardDescription className="text-xs uppercase tracking-wide text-muted-foreground">Minimum AQI</CardDescription>
             <CardTitle className="font-mono text-3xl">{stats.min.toFixed(2)}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">Lowest reading inside the selected window.</CardContent>
         </Card>
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardDescription className="text-xs uppercase tracking-wide text-muted-foreground">Average AQI</CardDescription>
             <CardTitle className="font-mono text-3xl">{stats.avg.toFixed(2)}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">Rolling mean for the filtered range.</CardContent>
         </Card>
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardDescription className="text-xs uppercase tracking-wide text-muted-foreground">Maximum AQI</CardDescription>
             <CardTitle className="font-mono text-3xl">{stats.max.toFixed(2)}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">Peak value during the range.</CardContent>
         </Card>
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardDescription className="text-xs uppercase tracking-wide text-muted-foreground">Active Sensors</CardDescription>
             <CardTitle className="font-mono text-3xl">{stats.sensors}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 text-sm text-muted-foreground">Unique sensors contributing data.</CardContent>
         </Card>
       </div>
 
       <Card className="border-0 shadow-lg">
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Air Quality Over Time</CardTitle>
-            <CardDescription>Use the range picker to focus on a specific window, then export the same slice.</CardDescription>
+            <CardTitle>AQI Trends</CardTitle>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Popover>
@@ -408,11 +394,11 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-[hsl(var(--chart-1))]"></span>
-                AQI trend over time
+                AQI trend
               </span>
               <span className="flex items-center gap-2">
                 <span className="font-mono text-base font-semibold text-foreground">{stats.avg.toFixed(2)}</span>
-                mean inside range
+                mean
               </span>
               <span className="flex items-center gap-2">
                 <span className="font-mono text-base font-semibold text-foreground">{stats.min.toFixed(2)}</span>
@@ -424,59 +410,6 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
               </span>
               <span className="ml-auto text-xs text-muted-foreground">Range: {formatDateRange(dateRange)}</span>
             </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Latest points</p>
-              <p className="text-xs text-muted-foreground">The most recent samples in the selected window.</p>
-            </div>
-            <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-              <span className="font-mono">{filteredData.length}</span> rows ready for export
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Timestamp</TableHead>
-                  <TableHead>Sensor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">AQI</TableHead>
-                  <TableHead>Location</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tableRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                      Nothing to display for this date range.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  tableRows.map((row) => (
-                    <TableRow key={`${row.sensorId}-${row.timestamp}`}>
-                      <TableCell className="font-mono text-xs">{formatTimestamp(row.timestamp)}</TableCell>
-                      <TableCell className="font-medium">{row.sensorId ?? "—"}</TableCell>
-                      <TableCell>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
-                            getCategoryMeta(row.aqiCategory as AqiCategory | undefined).className
-                          )}
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
-                          {getCategoryMeta(row.aqiCategory as AqiCategory | undefined).label}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">{row.value.toFixed(2)}</TableCell>
-                      <TableCell className="truncate text-muted-foreground">{row.location ?? "—"}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
           </div>
         </CardContent>
       </Card>

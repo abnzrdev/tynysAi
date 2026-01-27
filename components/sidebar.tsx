@@ -51,12 +51,11 @@ type SidebarItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  description?: string;
   badge?: string;
   children?: { label: string; href: string; anchorId?: string }[];
 };
 
-const SECTION_ANCHORS = ["map-section", "stats-section"];
+const SECTION_ANCHORS = ["map-view", "particulate-metrics", "analytics", "reports"];
 
 type SidebarCSSVars = CSSProperties & {
   "--sidebar-width"?: string;
@@ -79,17 +78,26 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
         label: "Dashboard",
         href: `/${safeLocale}/dashboard`,
         icon: LayoutDashboard,
-        description: "Overview metrics",
         children: [
           {
-            label: "Map View",
+            label: "Map Overview",
             href: `#${SECTION_ANCHORS[0]}`,
             anchorId: SECTION_ANCHORS[0],
           },
           {
-            label: "Detailed Statistics",
+            label: "Air Composition",
             href: `#${SECTION_ANCHORS[1]}`,
             anchorId: SECTION_ANCHORS[1],
+          },
+          {
+            label: "Analytics Trends",
+            href: `#${SECTION_ANCHORS[2]}`,
+            anchorId: SECTION_ANCHORS[2],
+          },
+          {
+            label: "Reports",
+            href: `#${SECTION_ANCHORS[3]}`,
+            anchorId: SECTION_ANCHORS[3],
           },
         ],
       },
@@ -215,8 +223,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
             <Link
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
-                "hover:bg-muted",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted",
                 isActive(item.href)
                   ? "bg-muted text-foreground ring-1 ring-border"
                   : "text-muted-foreground",
@@ -227,12 +234,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
               {!compact && (
                 <div className="flex flex-1 items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium font-mono">{item.label}</span>
-                    {item.description && (
-                      <span className="text-xs text-muted-foreground">
-                        {item.description}
-                      </span>
-                    )}
+                    <span className="font-mono text-base font-medium">{item.label}</span>
                   </div>
                   {item.badge && (
                     <Badge variant="outline" className="border-border text-xs text-foreground">
@@ -257,17 +259,14 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
                       )
                     }
                     className={cn(
-                      "flex items-center gap-2 rounded-lg px-2 py-2 text-xs transition-colors",
-                      "hover:text-foreground",
-                      child.anchorId && activeSection === child.anchorId
-                        ? "text-foreground"
-                        : "text-muted-foreground"
+                      "flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors hover:text-foreground text-muted-foreground",
+                      child.anchorId && activeSection === child.anchorId && "text-foreground"
                     )}
                   >
                     <span
                       className={cn(
-                        "h-1.5 w-1.5 rounded-full bg-current transition-opacity",
-                        child.anchorId && activeSection !== child.anchorId && "opacity-60"
+                        "h-1.5 w-1.5 rounded-full bg-current transition-opacity opacity-60",
+                        child.anchorId && activeSection === child.anchorId && "opacity-100"
                       )}
                     />
                     <span className="font-mono">{child.label}</span>

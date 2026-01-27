@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Cloud, Droplets, Thermometer, Wind } from "lucide-react";
 
@@ -68,9 +68,6 @@ export function ParticulateMetrics() {
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <CardTitle className="text-2xl">Particulate Measuring & Composition</CardTitle>
-          <CardDescription>
-            Live sample from {MOCK_SENSOR_SAMPLE.site} - Device {MOCK_SENSOR_SAMPLE.device_id}
-          </CardDescription>
         </div>
         <Badge className={`self-start px-3 py-1 text-sm font-semibold ${tone.badge}`}>
           {level.status} exposure
@@ -93,10 +90,6 @@ export function ParticulateMetrics() {
                     PM2.5 {MOCK_SENSOR_SAMPLE.pm25.toFixed(1)} / PM10 {MOCK_SENSOR_SAMPLE.pm10.toFixed(1)}
                   </span>
                 </div>
-                <p className="text-lg font-semibold text-foreground">Overall particulate exposure</p>
-                <p className="text-sm text-muted-foreground">
-                  Classification derived from raw PM2.5 and PM10 readings in real time.
-                </p>
               </div>
               <Wind className={`h-10 w-10 ${tone.text}`} />
             </div>
@@ -127,7 +120,6 @@ export function ParticulateMetrics() {
               <p className="mt-4 text-4xl font-mono font-semibold text-foreground">
                 {MOCK_SENSOR_SAMPLE.pm25.toFixed(1)}
               </p>
-              <p className="text-sm text-muted-foreground">Fine particles impacting respiratory systems.</p>
             </div>
 
             <div className="rounded-2xl border bg-card/80 px-4 py-5 shadow-sm">
@@ -143,7 +135,6 @@ export function ParticulateMetrics() {
               <p className="mt-4 text-4xl font-mono font-semibold text-foreground">
                 {MOCK_SENSOR_SAMPLE.pm10.toFixed(1)}
               </p>
-              <p className="text-sm text-muted-foreground">Coarse particulate loading at the sample site.</p>
             </div>
           </div>
         </div>
@@ -155,7 +146,6 @@ export function ParticulateMetrics() {
                 <Cloud className="h-4 w-4" />
                 <span className="text-sm font-semibold">CO2</span>
               </div>
-              <p className="text-sm text-muted-foreground">Cabin air loading</p>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.co2.toLocaleString()} ppm
@@ -168,7 +158,6 @@ export function ParticulateMetrics() {
                 <Thermometer className="h-4 w-4" />
                 <span className="text-sm font-semibold">Temperature</span>
               </div>
-              <p className="text-sm text-muted-foreground">Ambient thermal state</p>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.temp.toFixed(1)} C
@@ -181,7 +170,6 @@ export function ParticulateMetrics() {
                 <Droplets className="h-4 w-4" />
                 <span className="text-sm font-semibold">Humidity</span>
               </div>
-              <p className="text-sm text-muted-foreground">Relative moisture</p>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.hum.toFixed(1)}%

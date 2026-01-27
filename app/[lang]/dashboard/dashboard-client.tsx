@@ -6,13 +6,25 @@ import { SensorChart } from "@/components/sensor-chart";
 import { SensorDistribution, type SensorSlice } from "@/components/sensor-distribution";
 import { SensorAnalytics } from "@/components/analytics/SensorAnalytics";
 import { ParticulateMetrics } from "@/components/dashboard/ParticulateMetrics";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Database, Filter, Radio, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Activity,
+  Database,
+  FileText,
+  Filter,
+  LineChart,
+  Map,
+  Microscope,
+  Radio,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 
 export type SensorReading = {
@@ -46,6 +58,29 @@ interface DashboardCopy {
 interface DashboardClientProps {
   readings: SensorReading[];
   dict: DashboardCopy;
+}
+
+type SectionHeaderProps = {
+  id?: string;
+  icon: LucideIcon;
+  title: string;
+  className?: string;
+};
+
+function SectionHeader({ id, icon: Icon, title, className }: SectionHeaderProps) {
+  return (
+    <div
+      id={id}
+      className={cn(
+        "text-lg font-mono font-semibold tracking-tight text-foreground flex items-center gap-2 mb-4 mt-8 border-b pb-2",
+        "scroll-mt-28",
+        className
+      )}
+    >
+      <Icon className="h-5 w-5 text-muted-foreground" />
+      <span>{title}</span>
+    </div>
+  );
 }
 
 export function DashboardClient({ readings, dict }: DashboardClientProps) {
@@ -125,12 +160,12 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   const statItems = useMemo(
     () => [
-      { label: dict.totalDataPoints, value: statValues.totalDataPoints, icon: Database },
-      { label: dict.activeSensors, value: statValues.activeSensors, icon: Radio },
-      { label: dict.recentReadings, value: statValues.recentReadings, icon: Activity },
-      { label: dict.averageValue, value: statValues.avgSensorValue, icon: TrendingUp },
+      { label: "Total Points", value: statValues.totalDataPoints, icon: Database },
+      { label: "Active Sensors", value: statValues.activeSensors, icon: Radio },
+      { label: "Recent Readings", value: statValues.recentReadings, icon: Activity },
+      { label: "Avg. Value", value: statValues.avgSensorValue, icon: TrendingUp },
     ],
-    [dict, statValues]
+    [statValues]
   );
 
   const sensorSlices: SensorSlice[] = useMemo(() => {
@@ -283,7 +318,8 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   return (
     <div className="space-y-8">
-      <section id="map-section" className="scroll-mt-28">
+      <section id="map-view" aria-labelledby="map-view-heading" className="space-y-6 scroll-mt-28">
+        <SectionHeader id="map-view-heading" icon={Map} title="Live Monitoring" />
         <DashboardMapPanel
           readings={filteredReadings}
           emptyMapText={dict.noGeocodedData}
@@ -308,13 +344,23 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
             </div>
           ))}
         </div>
-
-        <div className="mt-6">
-          <ParticulateMetrics />
-        </div>
       </section>
 
-      <section id="stats-section" className="space-y-8 scroll-mt-28">
+      <section
+        id="particulate-metrics"
+        aria-labelledby="particulate-metrics-heading"
+        className="scroll-mt-28"
+      >
+        <SectionHeader id="particulate-metrics-heading" icon={Microscope} title="Air Composition Analysis" />
+        <ParticulateMetrics />
+      </section>
+
+      <section
+        id="analytics"
+        aria-labelledby="analytics-heading"
+        className="space-y-8 scroll-mt-28"
+      >
+        <SectionHeader id="analytics-heading" icon={LineChart} title="Historical Trends" />
         <div className="w-full">
           <SensorChart data={filteredReadings} actionSlot={filterPopover} />
         </div>
@@ -323,7 +369,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle>{dict.sensorStatistics}</CardTitle>
-              <CardDescription>{dict.keyMetrics}</CardDescription>
             </CardHeader>
             <CardContent>
               {filteredReadings.length === 0 ? (
@@ -355,9 +400,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
                       <p className="font-mono text-3xl font-semibold">
                         {statNumbers.avgValue.toFixed(2)}
                       </p>
-                      <p className="font-mono text-[11px] text-muted-foreground">
-                        Range {statNumbers.minValue.toFixed(1)}–{statNumbers.maxValue.toFixed(1)}
-                      </p>
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -382,7 +424,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle>{dict.sensorDataDistribution}</CardTitle>
-              <CardDescription>{dict.recentReadingsBySensor}</CardDescription>
             </CardHeader>
             <CardContent>
               <SensorDistribution
@@ -395,7 +436,12 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         </div>
       </section>
 
-      <section id="analytics-section" className="space-y-6 scroll-mt-28">
+      <section
+        id="reports"
+        aria-labelledby="reports-heading"
+        className="space-y-6 scroll-mt-28"
+      >
+        <SectionHeader id="reports-heading" icon={FileText} title="Export & Reports" />
         <SensorAnalytics data={filteredReadings} />
       </section>
     </div>
