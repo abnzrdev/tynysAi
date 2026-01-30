@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-labelledby="title">
+  <title id="title">Analytics bars icon</title>
+  <g id="icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+    <line x1="4" y1="20" x2="4" y2="12" />
+    <line x1="10" y1="20" x2="10" y2="8" />
+    <line x1="16" y1="20" x2="16" y2="4" />
+    <path d="M4 12 L10 8 L16 4 L20 6" />
+  </g>
+</svg>

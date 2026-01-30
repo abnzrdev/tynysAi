@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-labelledby="title">
+  <title id="title">Arrow forward icon</title>
+  <g id="icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+    <path d="M5 12h13" />
+    <path d="M13 6l5 6-5 6" />
+  </g>
+</svg>

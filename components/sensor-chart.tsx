@@ -191,18 +191,12 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
                   className="h-5 w-5 text-cyan-500"
+                  aria-hidden="true"
+                  focusable="false"
                 >
-                  <line x1="12" x2="12" y1="20" y2="10" />
-                  <line x1="18" x2="18" y1="20" y2="4" />
-                  <line x1="6" x2="6" y1="20" y2="16" />
+                  <use href="/icons/analytics-bars.svg#icon" />
                 </svg>
                 Sensor Data
               </CardTitle>
@@ -237,18 +231,12 @@ export function SensorChart({ data, actionSlot }: SensorChartProps) {
             <div className="flex h-[380px] items-center justify-center rounded-lg border-2 border-dashed border-muted">
               <div className="text-center text-muted-foreground">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
                   className="mx-auto mb-2 h-12 w-12 opacity-50"
+                  aria-hidden="true"
+                  focusable="false"
                 >
-                  <line x1="12" x2="12" y1="20" y2="10" />
-                  <line x1="18" x2="18" y1="20" y2="4" />
-                  <line x1="6" x2="6" y1="20" y2="16" />
+                  <use href="/icons/empty-chart.svg#icon" />
                 </svg>
                 <p>No data available for the selected filters</p>
                 <p className="mt-2 text-sm">Try adjusting your filter criteria</p>
