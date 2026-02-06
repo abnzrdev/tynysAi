@@ -1,43 +1,49 @@
 # syntax=docker/dockerfile:1
 
 FROM node:20-alpine AS base
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
 
+# ── Dependencies ──────────────────────────────────────────────
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN NODE_ENV=development npm ci
+# Install ALL deps (dev included) so tailwindcss etc. are available for the build
+RUN npm ci
 
-FROM deps AS builder
+# ── Builder ───────────────────────────────────────────────────
+FROM base AS builder
 WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# next build needs DB_URL at build time for drizzle schema
 ARG DB_URL
 ENV DB_URL=$DB_URL
-COPY . .
+ENV NODE_ENV=production
 RUN npm run build
 
+# ── Runner ────────────────────────────────────────────────────
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-ARG DB_URL
-ENV DB_URL=$DB_URL
-
-# Install sharp for image optimization
-RUN npm install --os=linux --cpu=arm64 sharp@0.33.2 2>/dev/null || npm install sharp@0.33.2
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Copy standalone output
+# Copy standalone output (includes node_modules with sharp)
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Create cache directory with correct permissions
-RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+# Copy sharp native binaries from the deps stage (standalone sometimes misses them)
+COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
+COPY --from=deps /app/node_modules/@img  ./node_modules/@img
+
+# Writable cache directory for image optimisation
+RUN mkdir -p .next/cache/images && chown -R nextjs:nodejs .next
 
 USER nextjs
 EXPOSE 3000
