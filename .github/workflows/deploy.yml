@@ -22,9 +22,8 @@ jobs:
             cd /home/administrator/tynysAi
 
             echo "==> Pulling latest code..."
-            git stash --quiet 2>/dev/null || true
-            git pull --ff-only
-            git stash pop --quiet 2>/dev/null || true
+            git fetch origin
+            git reset --hard origin/main
 
             echo "==> Building and starting with Docker Compose..."
             docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
