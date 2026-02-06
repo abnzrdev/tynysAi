@@ -22,7 +22,9 @@ jobs:
             cd /home/administrator/tynysAi
 
             echo "==> Pulling latest code..."
+            git stash --quiet 2>/dev/null || true
             git pull --ff-only
+            git stash pop --quiet 2>/dev/null || true
 
             echo "==> Stopping old standalone process (if any)..."
             pkill -f "next-server" || true
