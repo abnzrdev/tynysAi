@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DB_URL: ${DB_URL}
+    container_name: tynys-app
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    environment:
+      NODE_ENV: production
+      DB_URL: ${DB_URL}
+      DATABASE_URL: ${DB_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      IOT_DEVICE_SECRET: ${IOT_DEVICE_SECRET}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

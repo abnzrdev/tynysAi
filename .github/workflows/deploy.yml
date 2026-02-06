@@ -1,0 +1,41 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /home/administrator/tynysAi
+
+            echo "==> Pulling latest code..."
+            git pull --ff-only
+
+            echo "==> Stopping old standalone process (if any)..."
+            pkill -f "next-server" || true
+            sleep 2
+
+            echo "==> Building and starting with Docker Compose..."
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            echo "==> Waiting for health check..."
+            sleep 10
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3010 || echo "000")
+            if [ "$STATUS" = "000" ]; then
+              echo "WARNING: App not responding yet, check logs with: docker compose -f docker-compose.prod.yml logs"
+            else
+              echo "==> Deploy complete! HTTP status: $STATUS"
+            fi
