@@ -26,9 +26,12 @@ jobs:
             git pull --ff-only
             git stash pop --quiet 2>/dev/null || true
 
-            echo "==> Stopping old standalone process (if any)..."
-            pkill -f "next-server" || true
-            sleep 2
+            echo "==> Stopping old standalone process on port 3010 (if any)..."
+            PID=$(lsof -ti:3010 2>/dev/null || true)
+            if [ -n "$PID" ]; then
+              kill $PID 2>/dev/null || true
+              sleep 2
+            fi
 
             echo "==> Building and starting with Docker Compose..."
             docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
