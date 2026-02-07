@@ -28,6 +28,7 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -42,9 +43,16 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
 COPY --from=deps /app/node_modules/@img  ./node_modules/@img
 
+# Copy migration files so migrations run on startup
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/migrate.mjs ./migrate.mjs
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY --from=deps /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
+
 # Writable cache directory for image optimisation
 RUN mkdir -p .next/cache/images && chown -R nextjs:nodejs .next
 
 USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
