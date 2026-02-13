@@ -7,15 +7,30 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
 import DashboardFooter from "@/components/Layout/DashboardFooter";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AnalyticsPage({ params }: { params: { lang: Locale } }) {
   const dict = await getDictionary(params.lang);
-  const session = await getSession();
+
+  let session;
+  try {
+    session = await getSession();
+  } catch (error) {
+    console.error('Failed to fetch session (DB may be unavailable):', error);
+    redirect(`/${params.lang}/sign-in`);
+  }
 
   if (!session || !session.user) {
     redirect(`/${params.lang}/sign-in`);
   }
 
-  const user = await getUserByEmail(session.user.email!);
+  let user;
+  try {
+    user = await getUserByEmail(session.user.email!);
+  } catch (error) {
+    console.error('Failed to fetch user (DB may be unavailable):', error);
+    user = null;
+  }
 
   if (!user) {
     return (

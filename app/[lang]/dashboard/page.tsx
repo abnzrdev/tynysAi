@@ -7,11 +7,19 @@ import { type Locale } from "@/lib/i18n/config";
 import { DashboardClient } from "./dashboard-client";
 import DashboardFooter from "@/components/Layout/DashboardFooter";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage({ params }: { params: { lang: Locale } }) {
   const dict = await getDictionary(params.lang);
-  
-  // Get the current session
-  const session = await getSession();
+
+  // Get the current session — redirect on failure or missing auth
+  let session;
+  try {
+    session = await getSession();
+  } catch (error) {
+    console.error('Failed to fetch session (DB may be unavailable):', error);
+    redirect(`/${params.lang}/sign-in`);
+  }
 
   // Redirect to sign-in if not authenticated
   if (!session || !session.user) {
@@ -19,7 +27,13 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
   }
 
   // Fetch user from database using email
-  const user = await getUserByEmail(session.user.email!);
+  let user;
+  try {
+    user = await getUserByEmail(session.user.email!);
+  } catch (error) {
+    console.error('Failed to fetch user (DB may be unavailable):', error);
+    user = null;
+  }
 
   // If user doesn't exist, show error
   // User should be created automatically during sign-in callback

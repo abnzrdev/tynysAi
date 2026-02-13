@@ -29,7 +29,6 @@ env.text
 __tests__
 coverage
 docs
-drizzle
 scripts
 *.test.*
 *.spec.*
