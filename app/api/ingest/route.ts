@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-parser';
 import { batchInsertSensorReadings } from '@/lib/data-access';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Get the Authorization header

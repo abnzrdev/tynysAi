@@ -11,6 +11,8 @@ import {
   checkDuplicateReading
 } from '@/lib/sensor-data-access';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/v1/sensor-data
  * 
