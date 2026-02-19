@@ -27,6 +27,7 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/tynys_test_db
+      DB_URL: postgres://postgres:postgres@localhost:5432/tynys_test_db
       NEXTAUTH_SECRET: super-secret-test-key
       NEXTAUTH_URL: http://localhost:3000
 
