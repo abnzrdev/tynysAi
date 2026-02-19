@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import type { Session } from 'next-auth';
 import type { Locale } from '@/lib/i18n/config';
 
+// Seeded PRNG to ensure deterministic random values for SSR/client hydration
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
 type HeroSectionProps = {
   lang: Locale;
   session: Session | null;
@@ -59,24 +68,26 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
     }
   });
 
-  // Generate random particles for air quality visualization
+  // Generate random particles for air quality visualization (deterministic seed)
+  const rng1 = seededRandom(42);
   const particles = Array.from({ length: 50 }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 3 + 1,
-    duration: Math.random() * 20 + 15,
-    delay: Math.random() * 5,
+    x: rng1() * 100,
+    y: rng1() * 100,
+    size: rng1() * 3 + 1,
+    duration: rng1() * 20 + 15,
+    delay: rng1() * 5,
   }));
 
-  // Generate air molecules (O2, CO2, etc.)
+  // Generate air molecules (O2, CO2, etc.) (deterministic seed)
+  const rng2 = seededRandom(123);
   const molecules = Array.from({ length: 30 }, (_, i) => ({
     id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 8 + 4,
-    duration: Math.random() * 25 + 20,
-    delay: Math.random() * 5,
+    x: rng2() * 100,
+    y: rng2() * 100,
+    size: rng2() * 8 + 4,
+    duration: rng2() * 25 + 20,
+    delay: rng2() * 5,
   }));
 
   return (
@@ -145,8 +156,8 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
 
             {/* Floating Air Particles */}
             {particles.map((particle) => {
-              const driftX = (Math.random() - 0.5) * 15;
-              const driftX2 = (Math.random() - 0.5) * 20;
+              const driftX = ((particle.x * 7 + particle.id * 13) % 100 / 100 - 0.5) * 15;
+              const driftX2 = ((particle.y * 11 + particle.id * 17) % 100 / 100 - 0.5) * 20;
               return (
                 <motion.circle
                   key={`particle-${particle.id}`}
@@ -170,8 +181,8 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
 
             {/* Air Molecules (O2, CO2 representation) */}
             {molecules.map((molecule) => {
-              const driftX = (Math.random() - 0.5) * 8;
-              const driftY = (Math.random() - 0.5) * 8;
+              const driftX = ((molecule.x * 7 + molecule.id * 13) % 100 / 100 - 0.5) * 8;
+              const driftY = ((molecule.y * 11 + molecule.id * 17) % 100 / 100 - 0.5) * 8;
               return (
                 <motion.g
                   key={`molecule-${molecule.id}`}
