@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { motion, type Transition, type Variants } from 'framer-motion';
-import { CheckCircle, Mail } from 'lucide-react';
-import Image from 'next/image';
-import { useCallback, useState } from 'react';
-import { Navbar } from '@/components/navbar';
-import { HeroSection } from '@/components/HeroSection';
-import { ContactFormModal } from '@/components/ContactFormModal';
-import { type Locale } from '@/lib/i18n/config';
-import type { Session } from 'next-auth';
+import { motion, type Transition, type Variants } from "framer-motion";
+import { CheckCircle, Mail } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useState } from "react";
+import { Navbar } from "@/components/navbar";
+import { HeroSection } from "@/components/HeroSection";
+import { ContactFormModal } from "@/components/ContactFormModal";
+import { type Locale } from "@/lib/i18n/config";
+import type { Session } from "next-auth";
 
 // Types for components
 type Dictionary = {
@@ -71,7 +71,7 @@ type FeatureCardProps = {
 };
 
 // Animation variants
-const revealTransition: Transition = { duration: 0.8, ease: 'easeOut' };
+const revealTransition: Transition = { duration: 0.8, ease: "easeOut" };
 
 const revealVariants: Variants = {
   hidden: { opacity: 0, y: 40 },
@@ -93,7 +93,12 @@ const staggerContainer = {
   },
 };
 
-const ArchitectureLayer = ({ number, title, description, delay }: ArchitectureLayerProps) => (
+const ArchitectureLayer = ({
+  number,
+  title,
+  description,
+  delay,
+}: ArchitectureLayerProps) => (
   <motion.div
     variants={revealVariants}
     initial="hidden"
@@ -105,7 +110,7 @@ const ArchitectureLayer = ({ number, title, description, delay }: ArchitectureLa
     <div className="relative h-full p-6 rounded-2xl bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-teal-200/50 dark:border-teal-800/50 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:border-teal-400 dark:hover:border-teal-500">
       {/* Gradient overlay on hover */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-50/0 via-blue-50/0 to-teal-50/0 group-hover:from-teal-50/40 group-hover:via-blue-50/20 group-hover:to-teal-50/40 dark:group-hover:from-teal-950/15 dark:group-hover:via-blue-950/8 dark:group-hover:to-teal-950/15 transition-all duration-500 pointer-events-none" />
-      
+
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header with Number */}
@@ -118,15 +123,21 @@ const ArchitectureLayer = ({ number, title, description, delay }: ArchitectureLa
           </div>
           <div className="flex-1">
             <div className="inline-block px-2.5 py-1 rounded-full bg-teal-100 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 mb-2">
-              <span className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wider">Layer {number}</span>
+              <span className="text-xs font-semibold text-teal-700 dark:text-teal-300 uppercase tracking-wider">
+                Layer {number}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Title and Description */}
         <div className="flex-1">
-          <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          <h3 className="text-xl font-bold text-foreground mb-3 leading-tight">
+            {title}
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {description}
+          </p>
         </div>
       </div>
     </div>
@@ -149,11 +160,15 @@ const FeatureCard = ({ icon: Icon, title, description }: FeatureCardProps) => (
 const useTranslations = (dict: Dictionary) => {
   return useCallback(
     (path: string) => {
-      const segments = path.split('.');
+      const segments = path.split(".");
       let current: unknown = dict;
 
       for (const segment of segments) {
-        if (current && typeof current === 'object' && segment in (current as Record<string, unknown>)) {
+        if (
+          current &&
+          typeof current === "object" &&
+          segment in (current as Record<string, unknown>)
+        ) {
           current = (current as Record<string, unknown>)[segment];
         } else {
           current = undefined;
@@ -161,15 +176,24 @@ const useTranslations = (dict: Dictionary) => {
         }
       }
 
-      return typeof current === 'string' ? current : undefined;
+      return typeof current === "string" ? current : undefined;
     },
-    [dict]
+    [dict],
   );
 };
 
-export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Locale; session: Session | null }) {
+export function HomePage({
+  dict,
+  lang,
+  session,
+}: {
+  dict: Dictionary;
+  lang: Locale;
+  session: Session | null;
+}) {
   const t = useTranslations(dict);
-  const howItWorksHeading = t('howItWorks') ?? t('architecture.title') ?? 'How it Works';
+  const howItWorksHeading =
+    t("howItWorks") ?? t("architecture.title") ?? "How it Works";
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
@@ -178,9 +202,9 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
         <Navbar />
       </div>
 
-      <HeroSection 
-        lang={lang} 
-        session={session} 
+      <HeroSection
+        lang={lang}
+        session={session}
         dict={{
           hero: dict.hero,
           heroPillars: dict.heroPillars,
@@ -188,23 +212,61 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
       />
 
       {/* How it Works */}
-      <section id="architecture" className="relative z-10 py-12 px-4 sm:px-6 lg:px-8 overflow-hidden -mt-20">
+      <section
+        id="architecture"
+        className="relative z-10 py-12 px-4 sm:px-6 lg:px-8 overflow-hidden -mt-20"
+      >
         {/* Background with gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-        
+
         {/* SVG Decorative Elements - Connecting Flow */}
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 dark:opacity-10" aria-hidden="true" style={{ zIndex: 0 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 dark:opacity-10"
+          aria-hidden="true"
+          style={{ zIndex: 0 }}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
           <defs>
-            <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgb(20, 184, 166)" stopOpacity="0.4" />
-              <stop offset="50%" stopColor="rgb(59, 130, 246)" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="rgb(20, 184, 166)" stopOpacity="0.4" />
+            <linearGradient
+              id="connectionGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop
+                offset="0%"
+                stopColor="rgb(20, 184, 166)"
+                stopOpacity="0.4"
+              />
+              <stop
+                offset="50%"
+                stopColor="rgb(59, 130, 246)"
+                stopOpacity="0.3"
+              />
+              <stop
+                offset="100%"
+                stopColor="rgb(20, 184, 166)"
+                stopOpacity="0.4"
+              />
             </linearGradient>
-            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-              <polygon points="0 0, 10 3, 0 6" fill="rgb(20, 184, 166)" opacity="0.5" />
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="10"
+              refX="9"
+              refY="3"
+              orient="auto"
+            >
+              <polygon
+                points="0 0, 10 3, 0 6"
+                fill="rgb(20, 184, 166)"
+                opacity="0.5"
+              />
             </marker>
           </defs>
-          
+
           {/* Flow path: 1 -> 2 -> 4 -> 3 */}
           <motion.path
             d="M 20 25 L 50 25 L 50 50 L 80 50 L 80 75"
@@ -218,7 +280,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
             viewport={{ once: true }}
             transition={{ duration: 1.5, delay: 0.8, ease: "easeInOut" }}
           />
-          
+
           {/* Connection from 1 to 3 */}
           <motion.path
             d="M 20 25 Q 20 50, 20 75"
@@ -231,7 +293,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
             viewport={{ once: true }}
             transition={{ duration: 1.2, delay: 1, ease: "easeInOut" }}
           />
-          
+
           {/* Connection from 2 to 4 */}
           <motion.path
             d="M 80 25 Q 80 50, 80 75"
@@ -244,7 +306,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
             viewport={{ once: true }}
             transition={{ duration: 1.2, delay: 1.2, ease: "easeInOut" }}
           />
-          
+
           {/* Decorative nodes at card positions */}
           {[1, 2, 3, 4].map((num, idx) => {
             const positions = [
@@ -269,7 +331,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
             );
           })}
         </svg>
-        
+
         <div className="relative max-w-7xl mx-auto">
           <motion.div
             variants={revealVariants}
@@ -387,42 +449,57 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">99.8%</div>
-                <div className="text-foreground font-medium">{dict.features.dataReliability}</div>
-                <div className="text-sm text-muted-foreground mt-1">{dict.features.withBufferFallback}</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">
+                  99.8%
+                </div>
+                <div className="text-foreground font-medium">
+                  {dict.features.dataReliability}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {dict.features.withBufferFallback}
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">&lt;30s</div>
-                <div className="text-foreground font-medium">{dict.features.updateFrequency}</div>
-                <div className="text-sm text-muted-foreground mt-1">{dict.features.realTimeMqtt}</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">
+                  &lt;30s
+                </div>
+                <div className="text-foreground font-medium">
+                  {dict.features.updateFrequency}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {dict.features.realTimeMqtt}
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">20+ Sensors</div>
-                <div className="text-foreground font-medium">{dict.features.multiParameter}</div>
-                <div className="text-sm text-muted-foreground mt-1">{dict.features.comprehensiveMonitoring}</div>
+                <div className="text-3xl font-bold text-teal-600 dark:text-teal-400 mb-2">
+                  20+ Sensors
+                </div>
+                <div className="text-foreground font-medium">
+                  {dict.features.multiParameter}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {dict.features.comprehensiveMonitoring}
+                </div>
               </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-
       {/* Footer */}
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-background text-muted-foreground">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Image 
-              src="/tynys-logo.png" 
-              alt="Tynys Logo" 
-              width={40} 
+            <Image
+              src="/tynys-logo.png"
+              alt="Tynys Logo"
+              width={40}
               height={40}
               className="drop-shadow-lg"
             />
             <span className="text-2xl font-bold text-foreground">Tynys</span>
           </div>
-          <p className="text-sm">
-            {dict.footer.description}
-          </p>
+          <p className="text-sm">{dict.footer.description}</p>
           <div className="mt-6 text-xs text-slate-500 dark:text-slate-600">
             © {new Date().getFullYear()} Tynys. {dict.footer.copyright}
           </div>
@@ -441,11 +518,10 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
       </button>
 
       {/* Contact Form Modal */}
-      <ContactFormModal 
-        open={isContactModalOpen} 
-        onOpenChange={setIsContactModalOpen} 
+      <ContactFormModal
+        open={isContactModalOpen}
+        onOpenChange={setIsContactModalOpen}
       />
     </div>
   );
 }
-

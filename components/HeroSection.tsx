@@ -1,12 +1,17 @@
-'use client';
+"use client";
 
-import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
-import { ArrowRight, LayoutDashboard, ChevronDown } from 'lucide-react';
-import Link from 'next/link';
-import { useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import type { Session } from 'next-auth';
-import type { Locale } from '@/lib/i18n/config';
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useMotionValueEvent,
+} from "framer-motion";
+import { ArrowRight, LayoutDashboard, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useRef } from "react";
+import { Button } from "@/components/ui/button";
+import type { Session } from "next-auth";
+import type { Locale } from "@/lib/i18n/config";
 
 // Seeded PRNG to ensure deterministic random values for SSR/client hydration
 function seededRandom(seed: number) {
@@ -41,7 +46,10 @@ type HeroSectionProps = {
 
 export function HeroSection({ lang, session, dict }: HeroSectionProps) {
   const heroRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
 
   // Background opacity: 1 (top) → 0 (bottom of hero)
   const backgroundOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
@@ -49,21 +57,25 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
   const backgroundScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   // Update body class when background is scrolled past
-  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
       // When scroll progress reaches 0.85 or more, background is effectively scrolled past
       const shouldBeSolid = latest >= 0.85;
-      const currentlySolid = document.body.hasAttribute('data-video-scrolled');
-      
+      const currentlySolid = document.body.hasAttribute("data-video-scrolled");
+
       if (shouldBeSolid && !currentlySolid) {
         // Background is scrolled past, add attribute to body
-        document.body.setAttribute('data-video-scrolled', 'true');
+        document.body.setAttribute("data-video-scrolled", "true");
         // Dispatch custom event for navbar to listen to
-        window.dispatchEvent(new CustomEvent('videoScrolled', { detail: true }));
+        window.dispatchEvent(
+          new CustomEvent("videoScrolled", { detail: true }),
+        );
       } else if (!shouldBeSolid && currentlySolid) {
         // Background is still visible, remove attribute
-        document.body.removeAttribute('data-video-scrolled');
-        window.dispatchEvent(new CustomEvent('videoScrolled', { detail: false }));
+        document.body.removeAttribute("data-video-scrolled");
+        window.dispatchEvent(
+          new CustomEvent("videoScrolled", { detail: false }),
+        );
       }
     }
   });
@@ -95,7 +107,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
       <div className="sticky top-0 flex h-screen items-center justify-center">
         <motion.div
           initial={false}
-          style={{ 
+          style={{
             opacity: backgroundOpacity,
             scale: backgroundScale,
           }}
@@ -111,12 +123,36 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
           >
             {/* Wind Current Lines */}
             <defs>
-              <linearGradient id="windGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(59, 130, 246, 0.1)" stopOpacity="0" />
-                <stop offset="50%" stopColor="rgba(59, 130, 246, 0.3)" stopOpacity="1" />
-                <stop offset="100%" stopColor="rgba(59, 130, 246, 0.1)" stopOpacity="0" />
+              <linearGradient
+                id="windGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="rgba(59, 130, 246, 0.1)"
+                  stopOpacity="0"
+                />
+                <stop
+                  offset="50%"
+                  stopColor="rgba(59, 130, 246, 0.3)"
+                  stopOpacity="1"
+                />
+                <stop
+                  offset="100%"
+                  stopColor="rgba(59, 130, 246, 0.1)"
+                  stopOpacity="0"
+                />
               </linearGradient>
-              <linearGradient id="particleGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <linearGradient
+                id="particleGradient"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
                 <stop offset="0%" stopColor="rgba(255, 255, 255, 0.4)" />
                 <stop offset="100%" stopColor="rgba(255, 255, 255, 0.1)" />
               </linearGradient>
@@ -147,7 +183,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   transition={{
                     duration: 8 + i * 0.5,
                     repeat: Infinity,
-                    ease: 'easeInOut',
+                    ease: "easeInOut",
                     delay: i * 0.3,
                   }}
                 />
@@ -156,8 +192,10 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
 
             {/* Floating Air Particles */}
             {particles.map((particle) => {
-              const driftX = ((particle.x * 7 + particle.id * 13) % 100 / 100 - 0.5) * 15;
-              const driftX2 = ((particle.y * 11 + particle.id * 17) % 100 / 100 - 0.5) * 20;
+              const driftX =
+                (((particle.x * 7 + particle.id * 13) % 100) / 100 - 0.5) * 15;
+              const driftX2 =
+                (((particle.y * 11 + particle.id * 17) % 100) / 100 - 0.5) * 20;
               return (
                 <motion.circle
                   key={`particle-${particle.id}`}
@@ -172,7 +210,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   transition={{
                     duration: particle.duration,
                     repeat: Infinity,
-                    ease: 'linear',
+                    ease: "linear",
                     delay: particle.delay,
                   }}
                 />
@@ -181,8 +219,10 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
 
             {/* Air Molecules (O2, CO2 representation) */}
             {molecules.map((molecule) => {
-              const driftX = ((molecule.x * 7 + molecule.id * 13) % 100 / 100 - 0.5) * 8;
-              const driftY = ((molecule.y * 11 + molecule.id * 17) % 100 / 100 - 0.5) * 8;
+              const driftX =
+                (((molecule.x * 7 + molecule.id * 13) % 100) / 100 - 0.5) * 8;
+              const driftY =
+                (((molecule.y * 11 + molecule.id * 17) % 100) / 100 - 0.5) * 8;
               return (
                 <motion.g
                   key={`molecule-${molecule.id}`}
@@ -195,7 +235,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   transition={{
                     duration: molecule.duration,
                     repeat: Infinity,
-                    ease: 'easeInOut',
+                    ease: "easeInOut",
                     delay: molecule.delay,
                   }}
                 >
@@ -250,7 +290,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                 transition={{
                   duration: 4 + i * 0.5,
                   repeat: Infinity,
-                  ease: 'easeOut',
+                  ease: "easeOut",
                   delay: i * 0.8,
                 }}
               />
@@ -258,7 +298,10 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
           </svg>
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/65" aria-hidden="true"></div>
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/65"
+            aria-hidden="true"
+          ></div>
         </motion.div>
 
         {/* Hero Container - Centered Layout */}
@@ -267,7 +310,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
             {/* Hero Content - Center Aligned - Minimal Text */}
             <div className="text-center space-y-6 text-white drop-shadow-[0_16px_48px_rgba(0,0,0,0.55)]">
               {/* Main Headline - Center Aligned */}
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
@@ -275,9 +318,9 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
               >
                 {dict.hero.title ? (
                   (() => {
-                    const words = dict.hero.title.split(' ');
+                    const words = dict.hero.title.split(" ");
                     const firstWord = words[0];
-                    const rest = words.slice(1).join(' ');
+                    const rest = words.slice(1).join(" ");
                     return (
                       <>
                         <span className="bg-gradient-to-r from-teal-400 via-blue-400 to-teal-300 bg-clip-text text-transparent">
@@ -293,9 +336,9 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   </span>
                 )}
               </motion.h1>
-              
+
               {/* Subheading - Short and Concise */}
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
@@ -305,7 +348,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
               </motion.p>
 
               {/* CTA Group - Center Aligned */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
@@ -316,8 +359,15 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   size="lg"
                   className="h-14 px-8 text-lg font-semibold bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-lg"
                 >
-                  <Link href={session ? `/${lang}/dashboard` : `/${lang}/sign-up`} className="flex items-center">
-                    {session ? <LayoutDashboard className="mr-2 h-5 w-5" /> : <ArrowRight className="mr-2 h-5 w-5" />}
+                  <Link
+                    href={session ? `/${lang}/dashboard` : `/${lang}/sign-up`}
+                    className="flex items-center"
+                  >
+                    {session ? (
+                      <LayoutDashboard className="mr-2 h-5 w-5" />
+                    ) : (
+                      <ArrowRight className="mr-2 h-5 w-5" />
+                    )}
                     {session ? dict.hero.goToDashboard : dict.hero.getStarted}
                   </Link>
                 </Button>
@@ -340,7 +390,11 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
           >
             <motion.div
               animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
               <ChevronDown className="h-8 w-8 text-white/70" />
             </motion.div>
