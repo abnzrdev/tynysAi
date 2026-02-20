@@ -50,6 +50,20 @@
       "when": 1767082602132,
       "tag": "0006_add_user_id_to_sensor_readings",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767082602133,
+      "tag": "0007_add_sensor_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1767082602134,
+      "tag": "0008_reset_sensor_readings",
+      "breakpoints": true
     }
   ]
 }

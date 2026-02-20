@@ -173,7 +173,7 @@ export function HomePage({ dict, lang, session }: { dict: Dictionary; lang: Loca
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
-    <div className="bg-background overflow-x-hidden">
+    <div className="relative bg-background overflow-x-hidden">
       <div className="relative z-50">
         <Navbar />
       </div>

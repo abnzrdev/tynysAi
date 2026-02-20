@@ -321,14 +321,12 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                     {session ? dict.hero.goToDashboard : dict.hero.getStarted}
                   </Link>
                 </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="h-14 px-8 text-lg font-semibold border-2 border-white/70 bg-white/10 text-white hover:bg-white/20 hover:border-white/90 hover:text-white transition-all duration-300 rounded-lg backdrop-blur-sm"
+                <a
+                  className="inline-flex items-center justify-center h-14 px-8 text-lg font-semibold rounded-lg shadow-lg bg-white text-slate-900 hover:bg-slate-100 transition-colors"
+                  href="#architecture"
                 >
-                  <Link href="#architecture" className="flex items-center">{dict.hero.learnMore}</Link>
-                </Button>
+                  {dict.hero.learnMore}
+                </a>
               </motion.div>
             </div>
           </div>

@@ -1,7 +1,0 @@
- id |       email       |     name      | is_admin |         created_at         
-----+-------------------+---------------+----------+----------------------------
- 10 | admin@tynys.kz    | Admin         | true     | 2026-01-17 10:14:30.451747
-  2 | test@example.com  | Test Account  | true     | 2026-01-10 16:43:00.037804
-  1 | admin@example.com | Admin Account | true     | 2026-01-10 16:32:01.734861
-(3 rows)
-

@@ -1,9 +1,11 @@
 # Next.js System Architecture Overview
+
 TynysAi is a **Next.js 14 App Router-only** system (no `pages/` directory) organized around locale-prefixed routes under `app/[lang]`, with middleware-driven locale detection and protected dashboard access. At the platform layer, `app/layout.tsx` composes global client providers (`SessionProvider` for NextAuth session context and `ThemeProvider` for UI theme state), while `app/[lang]/layout.tsx` and `app/[lang]/layout-client.tsx` apply route-scoped UI composition (dashboard sidebar shell vs public pages). Runtime flow is: request enters `middleware.ts` (locale normalization + auth gate for `/dashboard`), server routes/components fetch session and dictionaries, server pages query data via `lib/data-access.ts`, and then pass typed props into client dashboard components for interactive filtering/visualization.
 
 Core boundaries are split cleanly by responsibility: `app/` contains route composition and API route handlers (`app/api/**/route.ts`), `components/` contains client UI primitives and dashboard modules, `lib/` contains domain services (auth, i18n, validation, data-access), and `lib/db/*` owns Drizzle/Postgres schema and connection. Primary integrations are NextAuth Credentials (`lib/auth.ts` + `app/api/auth/[...nextauth]/route.ts` + signup API), IoT ingestion via both CSV (`app/api/ingest/route.ts`) and JSON (`app/api/v1/sensor-data/route.ts`) guarded by `IOT_DEVICE_SECRET`, plus geolocation/i18n locale resolution (`app/api/geolocation/route.ts`, `lib/i18n/location-detection.ts`). State management is intentionally lightweight: server state is fetched in Server Components and API handlers, while client state is localized via React hooks in dashboard clients (`useState`/`useMemo`) and session/theme contexts provided at the root.
 
 ## Architecture Visualization
+
 ```mermaid
 flowchart TD
   U[User Browser] --> M[middleware.ts\nLocale detect + auth guard]
