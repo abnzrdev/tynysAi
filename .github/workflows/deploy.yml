@@ -206,7 +206,20 @@ jobs:
             fi
 
             echo "==> Building Docker image..."
-            docker compose -f docker-compose.prod.yml build --no-cache
+            BUILD_OK=0
+            for i in 1 2 3; do
+              if docker compose -f docker-compose.prod.yml build --no-cache; then
+                BUILD_OK=1
+                break
+              fi
+              echo "Docker build attempt $i failed, retrying in 15s..."
+              sleep 15
+            done
+
+            if [ "$BUILD_OK" -ne 1 ]; then
+              echo "Docker build failed after 3 attempts"
+              exit 1
+            fi
 
             echo "==> Starting containers..."
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
