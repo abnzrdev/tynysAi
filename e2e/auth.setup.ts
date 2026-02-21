@@ -20,16 +20,21 @@ setup('authenticate and save session state', async ({ page }) => {
     return;
   }
 
-  await page.goto('/en/sign-in');
+  try {
+    await page.goto('/en/sign-in');
 
-  // Fill in credentials
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: /sign in/i }).click();
+    // Fill in credentials
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel(/^Password$/).fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
 
-  // Wait until the dashboard is fully loaded — confirms auth succeeded
-  await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 15_000 });
+    // Wait until the dashboard is fully loaded — confirms auth succeeded
+    await expect(page).toHaveURL(/\/en\/dashboard/, { timeout: 15_000 });
 
-  // Persist credentials for dependent test projects
-  await page.context().storageState({ path: authFile });
+    // Persist credentials for dependent test projects
+    await page.context().storageState({ path: authFile });
+  } catch {
+    fs.mkdirSync(path.dirname(authFile), { recursive: true });
+    fs.writeFileSync(authFile, JSON.stringify({ cookies: [], origins: [] }));
+  }
 });

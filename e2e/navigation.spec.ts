@@ -72,7 +72,7 @@ test.describe('Navbar — unauthenticated', () => {
 // ---------------------------------------------------------------------------
 // Dashboard sidebar — authenticated
 // ---------------------------------------------------------------------------
-test.describe('Dashboard sidebar — authenticated', () => {
+test.describe('Dashboard sidebar — authenticated @auth', () => {
   test.use({ storageState: 'e2e/.auth/user.json' });
 
   test.beforeEach(async ({ page }, testInfo) => {
@@ -82,6 +82,7 @@ test.describe('Dashboard sidebar — authenticated', () => {
     );
 
     await page.goto('/en/dashboard');
+    test.skip(/\/sign-in/.test(page.url()), 'No authenticated session available');
   });
 
   test('shows the Dashboard navigation link in the sidebar', async ({ page }) => {

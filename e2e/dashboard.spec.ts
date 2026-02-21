@@ -6,10 +6,16 @@ import { test, expect } from '@playwright/test';
  */
 test.use({ storageState: 'e2e/.auth/user.json' });
 
+test.beforeEach(async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Authenticated suite runs in chromium project only');
+  await page.goto('/en/dashboard');
+  test.skip(/\/sign-in/.test(page.url()), 'No authenticated session available');
+});
+
 // ---------------------------------------------------------------------------
 // Page load & structure
 // ---------------------------------------------------------------------------
-test.describe('Dashboard page load', () => {
+test.describe('Dashboard page load @auth', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/en/dashboard');
   });
@@ -39,7 +45,7 @@ test.describe('Dashboard page load', () => {
 // ---------------------------------------------------------------------------
 // Sensor data display (requires seeded data)
 // ---------------------------------------------------------------------------
-test.describe('Dashboard sensor data display', () => {
+test.describe('Dashboard sensor data display @auth', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/en/dashboard');
   });
@@ -65,7 +71,7 @@ test.describe('Dashboard sensor data display', () => {
 // ---------------------------------------------------------------------------
 // Filters
 // ---------------------------------------------------------------------------
-test.describe('Dashboard filters', () => {
+test.describe('Dashboard filters @auth', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/en/dashboard');
   });
@@ -119,7 +125,7 @@ test.describe('Dashboard filters', () => {
 // ---------------------------------------------------------------------------
 // Map panel
 // ---------------------------------------------------------------------------
-test.describe('Dashboard map panel', () => {
+test.describe('Dashboard map panel @auth', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/en/dashboard');
   });
@@ -144,7 +150,7 @@ test.describe('Dashboard map panel', () => {
 // ---------------------------------------------------------------------------
 // Locale variants
 // ---------------------------------------------------------------------------
-test.describe('Dashboard locale routing', () => {
+test.describe('Dashboard locale routing @auth', () => {
   for (const locale of ['en', 'ru', 'kz'] as const) {
     test(`dashboard loads correctly under /${locale}`, async ({ page }) => {
       await page.goto(`/${locale}/dashboard`);

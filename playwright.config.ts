@@ -36,6 +36,7 @@ export default defineConfig({
     // ── Step 2: run feature tests in Chromium using the saved session ─────
     {
       name: 'chromium',
+      grep: /@auth/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -47,6 +48,7 @@ export default defineConfig({
     {
       name: 'unauthenticated',
       testMatch: ['**/auth.spec.ts', '**/home.spec.ts', '**/navigation.spec.ts'],
+      grepInvert: /@auth/,
       use: { ...devices['Desktop Chrome'] },
     },
 
