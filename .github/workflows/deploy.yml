@@ -141,6 +141,9 @@ jobs:
             echo "==> Running migrations..."
             docker compose -f docker-compose.prod.yml exec -T app npm run migrate || true
 
+            echo "==> Seeding production data..."
+            docker compose -f docker-compose.prod.yml exec -T app npm run seed
+
             echo "==> Health check (up to 120 seconds)..."
             for i in $(seq 1 24); do
               STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3010/ || true)

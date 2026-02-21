@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
-import { and, desc, eq, gte } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 import * as schema from "../lib/db/schema";
@@ -14,6 +14,15 @@ dotenv.config();
 const OWNER_EMAIL = "hi@tynys.kz";
 const DEFAULT_CITY = "Almaty";
 const DEFAULT_COUNTRY = "KZ";
+const READINGS_PER_RUN = Number.parseInt(
+  process.env.SEED_READINGS_PER_RUN ?? "12",
+  10,
+);
+const READING_INTERVAL_MS = Number.parseInt(
+  process.env.SEED_READING_INTERVAL_MS ?? "5000",
+  10,
+);
+const RUN_SALT = `${Date.now()}-${randomBytes(6).toString("hex")}`;
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -199,12 +208,20 @@ function valueForSeries(
   return round(clamp(mid + baseShift + cycle + jitter, min, max), 2);
 }
 
-function alignedNow15m(): Date {
-  const now = new Date();
-  now.setSeconds(0, 0);
-  const minute = now.getMinutes();
-  now.setMinutes(Math.floor(minute / 15) * 15);
-  return now;
+function valueForRun(
+  sensorKey: string,
+  metric: string,
+  step: number,
+  min: number,
+  max: number,
+  waveFactor: number,
+): number {
+  const baseValue = valueForSeries(sensorKey, metric, step, min, max, waveFactor);
+  const span = max - min;
+  const runShift =
+    (deterministicUnit(`${sensorKey}:${metric}:${RUN_SALT}`) - 0.5) * span * 0.14;
+  const randomShift = (Math.random() - 0.5) * span * 0.06;
+  return round(clamp(baseValue + runShift + randomShift, min, max), 2);
 }
 
 async function ensureUser(
@@ -414,58 +431,46 @@ async function seedReadings(
 ) {
   section("Sensor Readings");
 
-  const now = alignedNow15m();
-  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const now = new Date();
 
   for (const sensor of sensorsToSeed) {
-    const existingRecent = await db
-      .select({
-        id: schema.sensorReadings.id,
-        timestamp: schema.sensorReadings.timestamp,
-      })
+    const latestReading = await db
+      .select({ timestamp: schema.sensorReadings.timestamp })
       .from(schema.sensorReadings)
-      .where(
-        and(
-          eq(schema.sensorReadings.sensorId, sensor.id),
-          gte(schema.sensorReadings.timestamp, dayAgo),
-        ),
-      )
-      .orderBy(desc(schema.sensorReadings.timestamp));
+      .where(eq(schema.sensorReadings.sensorId, sensor.id))
+      .orderBy(desc(schema.sensorReadings.timestamp))
+      .limit(1);
 
-    if (existingRecent.length >= 20) {
-      console.log(
-        `- ${sensor.deviceId}: skipped (has ${existingRecent.length} readings in last 24h)`,
-      );
-      continue;
-    }
+    const latestTimestampMs = latestReading[0]?.timestamp.getTime() ?? 0;
+    const runOffsetMs = Number.parseInt(
+      randomBytes(2).toString("hex"),
+      16,
+    ) % 900;
+    const candidateStartMs =
+      now.getTime() - (READINGS_PER_RUN - 1) * READING_INTERVAL_MS + runOffsetMs;
+    const startMs = Math.max(candidateStartMs, latestTimestampMs + 1);
 
-    const existingTs = new Set(
-      existingRecent.map((row) => row.timestamp.getTime()),
-    );
     const rows: Array<typeof schema.sensorReadings.$inferInsert> = [];
 
-    for (let i = 0; i < 20; i += 1) {
-      const timestamp = new Date(now.getTime() - (19 - i) * 15 * 60 * 1000);
-      if (existingTs.has(timestamp.getTime())) {
-        continue;
-      }
+    for (let i = 0; i < READINGS_PER_RUN; i += 1) {
+      const timestamp = new Date(startMs + i * READING_INTERVAL_MS);
 
       rows.push({
         sensorId: sensor.id,
         timestamp,
-        serverReceivedAt: new Date(timestamp.getTime() + 5_000),
-        pm1: valueForSeries(sensor.deviceId, "pm1", i, 0, 50, 0.15),
-        pm25: valueForSeries(sensor.deviceId, "pm25", i, 0, 75, 0.18),
-        pm10: valueForSeries(sensor.deviceId, "pm10", i, 0, 120, 0.18),
-        co2: valueForSeries(sensor.deviceId, "co2", i, 400, 1500, 0.12),
-        voc: valueForSeries(sensor.deviceId, "voc", i, 0.1, 1.5, 0.18),
-        temperature: valueForSeries(sensor.deviceId, "temp", i, 18, 28, 0.12),
-        humidity: valueForSeries(sensor.deviceId, "hum", i, 30, 70, 0.12),
-        co: valueForSeries(sensor.deviceId, "co", i, 0, 5, 0.14),
-        o3: valueForSeries(sensor.deviceId, "o3", i, 0, 50, 0.15),
-        no2: valueForSeries(sensor.deviceId, "no2", i, 0, 40, 0.15),
-        ch2o: valueForSeries(sensor.deviceId, "ch2o", i, 0.01, 0.12, 0.15),
-        pressure: valueForSeries(
+        serverReceivedAt: new Date(timestamp.getTime() + 1_000),
+        pm1: valueForRun(sensor.deviceId, "pm1", i, 0, 50, 0.15),
+        pm25: valueForRun(sensor.deviceId, "pm25", i, 0, 75, 0.18),
+        pm10: valueForRun(sensor.deviceId, "pm10", i, 0, 120, 0.18),
+        co2: valueForRun(sensor.deviceId, "co2", i, 400, 1500, 0.12),
+        voc: valueForRun(sensor.deviceId, "voc", i, 0.1, 1.5, 0.18),
+        temperature: valueForRun(sensor.deviceId, "temp", i, 18, 28, 0.12),
+        humidity: valueForRun(sensor.deviceId, "hum", i, 30, 70, 0.12),
+        co: valueForRun(sensor.deviceId, "co", i, 0, 5, 0.14),
+        o3: valueForRun(sensor.deviceId, "o3", i, 0, 50, 0.15),
+        no2: valueForRun(sensor.deviceId, "no2", i, 0, 40, 0.15),
+        ch2o: valueForRun(sensor.deviceId, "ch2o", i, 0.01, 0.12, 0.15),
+        pressure: valueForRun(
           sensor.deviceId,
           "pressure",
           i,
@@ -474,12 +479,12 @@ async function seedReadings(
           0.02,
         ),
         batteryLevel: Math.round(
-          valueForSeries(sensor.deviceId, "battery", i, 45, 100, 0.03),
+          valueForRun(sensor.deviceId, "battery", i, 45, 100, 0.03),
         ),
         signalStrength: Math.round(
-          valueForSeries(sensor.deviceId, "signal", i, -90, -40, 0.05),
+          valueForRun(sensor.deviceId, "signal", i, -90, -40, 0.05),
         ),
-        dataQualityScore: valueForSeries(
+        dataQualityScore: valueForRun(
           sensor.deviceId,
           "quality",
           i,
@@ -493,13 +498,10 @@ async function seedReadings(
       });
     }
 
-    if (rows.length === 0) {
-      console.log(`- ${sensor.deviceId}: no new timestamps to insert`);
-      continue;
-    }
-
     await db.insert(schema.sensorReadings).values(rows);
-    console.log(`- ${sensor.deviceId}: inserted ${rows.length} readings`);
+    console.log(
+      `- ${sensor.deviceId}: inserted ${rows.length} readings (${READING_INTERVAL_MS}ms interval)`,
+    );
   }
 }
 
@@ -561,10 +563,10 @@ async function seedHealth(
 async function main() {
   section("Seed Start");
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL ?? process.env.DB_URL;
   if (!connectionString) {
     throw new Error(
-      "DATABASE_URL is not set. Add it to .env.local or environment variables.",
+      "DATABASE_URL/DB_URL is not set. Add it to .env.local or environment variables.",
     );
   }
 
