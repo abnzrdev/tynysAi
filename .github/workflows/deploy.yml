@@ -119,12 +119,6 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            if [ -f .env ] && grep -qE '^DB_URL=.*@tynys-postgres([:/]|$)' .env; then
-              echo "==> Updating DB_URL host from tynys-postgres to host.docker.internal..."
-              sed -i 's/@tynys-postgres\([:/]\)/@host.docker.internal\1/g' .env
-              sed -i 's/@tynys-postgres$/@host.docker.internal/g' .env
-            fi
-
             echo "==> Building Docker image..."
             BUILD_OK=0
             for i in 1 2 3; do
