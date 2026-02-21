@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // ---------------------------------------------------------------------------
 // Helper — fills and submits the sign-in form
 // ---------------------------------------------------------------------------
 async function fillSignInForm(
-  page: Parameters<typeof test>[1] extends infer P ? P : never,
+  page: Page,
   email: string,
   password: string
 ) {
