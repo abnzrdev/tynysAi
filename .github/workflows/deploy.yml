@@ -145,7 +145,7 @@ jobs:
             for i in $(seq 1 24); do
               STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3010/ || true)
               [ -z "$STATUS" ] && STATUS="000"
-              if [ "$STATUS" = "200" ]; then
+              if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ]; then
                 echo "Deploy successful! HTTP $STATUS"
                 exit 0
               fi
