@@ -199,6 +199,12 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            if [ -f .env ] && grep -qE '^DB_URL=.*@tynys-postgres([:/]|$)' .env; then
+              echo "==> Updating DB_URL host from tynys-postgres to host.docker.internal..."
+              sed -i 's/@tynys-postgres\([:/]\)/@host.docker.internal\1/g' .env
+              sed -i 's/@tynys-postgres$/@host.docker.internal/g' .env
+            fi
+
             echo "==> Building Docker image..."
             docker compose -f docker-compose.prod.yml build --no-cache
 
@@ -208,14 +214,15 @@ jobs:
             echo "==> Running migrations..."
             docker compose -f docker-compose.prod.yml exec -T app npm run migrate || true
 
-            echo "==> Health check (up to 60 seconds)..."
-            for i in $(seq 1 12); do
-              STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3010 || echo "000")
+            echo "==> Health check (up to 120 seconds)..."
+            for i in $(seq 1 24); do
+              STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3010/ || true)
+              [ -z "$STATUS" ] && STATUS="000"
               if [ "$STATUS" = "200" ]; then
                 echo "Deploy successful! HTTP $STATUS"
                 exit 0
               fi
-              echo "Attempt $i/12 — HTTP $STATUS, waiting 5s..."
+              echo "Attempt $i/24 — HTTP $STATUS, waiting 5s..."
               sleep 5
             done
 
