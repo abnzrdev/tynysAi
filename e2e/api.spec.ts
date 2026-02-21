@@ -63,7 +63,7 @@ test.describe('POST /api/v1/sensor-data', () => {
     expect(response.status()).toBe(400);
   });
 
-  test('ingests valid sensor data and returns 200 with a readingId', async ({ request }) => {
+  test('ingests valid sensor data and returns 201 with a readingId', async ({ request }) => {
     test.skip(!bearerToken(), 'IOT_DEVICE_SECRET not set');
 
     const response = await request.post(endpoint, {
@@ -74,9 +74,9 @@ test.describe('POST /api/v1/sensor-data', () => {
       data: validPayload,
     });
 
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(201);
     const body = await response.json();
-    expect(body).toHaveProperty('readingId');
+    expect(body).toHaveProperty('data.readingId');
   });
 
   test('returns a duplicate warning when identical timestamp + device_id is submitted twice', async ({
@@ -101,10 +101,7 @@ test.describe('POST /api/v1/sensor-data', () => {
     const response = await request.post(endpoint, { headers, data: dedupPayload });
 
     const body = await response.json();
-    // Server should either return 200 with a warnings array OR 409
-    const isDuplicate =
-      response.status() === 409 ||
-      (response.status() === 200 && Array.isArray(body.warnings) && body.warnings.length > 0);
+    const isDuplicate = response.status() === 200 && body.duplicate === true;
     expect(isDuplicate).toBe(true);
   });
 });
@@ -192,14 +189,18 @@ test.describe('POST /api/auth/signup', () => {
     expect(response.status()).toBe(400);
   });
 
-  test('returns 409 when the email is already registered', async ({ request }) => {
-    const email = process.env.E2E_USER_EMAIL ?? '';
-    test.skip(!email, 'E2E_USER_EMAIL not set');
+  test('returns 409 when trying to register the same email twice', async ({ request }) => {
+    const duplicateEmail = `e2e-duplicate-${Date.now()}@example.com`;
 
-    const response = await request.post('/api/auth/signup', {
-      data: { name: 'Duplicate', email, password: 'SecurePass1!' },
+    const first = await request.post('/api/auth/signup', {
+      data: { name: 'Duplicate', email: duplicateEmail, password: 'SecurePass1!' },
     });
-    expect(response.status()).toBe(409);
+    expect(first.status()).toBe(201);
+
+    const second = await request.post('/api/auth/signup', {
+      data: { name: 'Duplicate Again', email: duplicateEmail, password: 'SecurePass1!' },
+    });
+    expect(second.status()).toBe(409);
   });
 
   test('returns 201 when a valid new account is submitted', async ({ request }) => {
@@ -209,6 +210,6 @@ test.describe('POST /api/auth/signup', () => {
     });
     expect(response.status()).toBe(201);
     const body = await response.json();
-    expect(body).toHaveProperty('id');
+    expect(body).toHaveProperty('user.id');
   });
 });

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const hasAuthCredentials = Boolean(process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD);
+
 /**
  * Navigation tests — covers locale switching, navbar rendering, and
  * sidebar links for authenticated users.
@@ -15,8 +17,7 @@ test.describe('Language / locale switcher', () => {
   test('switches from English to Russian via the language selector', async ({ page }) => {
     await page.goto('/en');
 
-    // Click the locale select (combobox)
-    await page.getByRole('combobox', { name: /language|locale/i }).click();
+    await page.getByRole('combobox').first().click();
     await page.getByRole('option', { name: /русский/i }).click();
 
     await expect(page).toHaveURL(/\/ru/, { timeout: 10_000 });
@@ -25,7 +26,7 @@ test.describe('Language / locale switcher', () => {
   test('switches from English to Kazakh via the language selector', async ({ page }) => {
     await page.goto('/en');
 
-    await page.getByRole('combobox', { name: /language|locale/i }).click();
+    await page.getByRole('combobox').first().click();
     await page.getByRole('option', { name: /қазақша/i }).click();
 
     await expect(page).toHaveURL(/\/kz/, { timeout: 10_000 });
@@ -74,7 +75,12 @@ test.describe('Navbar — unauthenticated', () => {
 test.describe('Dashboard sidebar — authenticated', () => {
   test.use({ storageState: 'e2e/.auth/user.json' });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name === 'unauthenticated' || !hasAuthCredentials,
+      'Requires authenticated project and credentials'
+    );
+
     await page.goto('/en/dashboard');
   });
 

@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
+const hasAuthCredentials = Boolean(process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD);
+
 // ---------------------------------------------------------------------------
 // Helper — fills and submits the sign-in form
 // ---------------------------------------------------------------------------
@@ -126,9 +128,13 @@ test.describe('Sign-Up page', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  test('shows an error when registering with an already-used email', async ({ page }) => {
-    const existingEmail = process.env.E2E_USER_EMAIL ?? '';
-    test.skip(!existingEmail, 'E2E_USER_EMAIL not set');
+  test('shows an error when registering with an already-used email', async ({ page, request }) => {
+    const existingEmail = `e2e-ui-duplicate-${Date.now()}@example.com`;
+
+    const seedResponse = await request.post('/api/auth/signup', {
+      data: { name: 'Existing User', email: existingEmail, password: 'SecureE2E1!' },
+    });
+    expect(seedResponse.status()).toBe(201);
 
     await page.getByLabel('Full Name').fill('Duplicate User');
     await page.getByLabel('Email').fill(existingEmail);
@@ -146,7 +152,12 @@ test.describe('Sign-Up page', () => {
 test.describe('Sign-Out', () => {
   test.use({ storageState: 'e2e/.auth/user.json' });
 
-  test('signs the user out and redirects to the sign-in page', async ({ page }) => {
+  test('signs the user out and redirects to the sign-in page', async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name === 'unauthenticated' || !hasAuthCredentials,
+      'Requires authenticated project and credentials'
+    );
+
     await page.goto('/en/dashboard');
 
     // Open the user avatar / dropdown menu and click Sign Out
