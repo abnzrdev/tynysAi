@@ -1,22 +1,31 @@
 import { redirect } from "next/navigation";
 import { SensorAnalytics } from "@/components/analytics/SensorAnalytics";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getSession } from "@/lib/auth";
 import { getUserByEmail, getRecentSensorReadings } from "@/lib/data-access";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
 import DashboardFooter from "@/components/Layout/DashboardFooter";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default async function AnalyticsPage({ params }: { params: { lang: Locale } }) {
+export default async function AnalyticsPage({
+  params,
+}: {
+  params: { lang: Locale };
+}) {
   const dict = await getDictionary(params.lang);
 
   let session;
   try {
     session = await getSession();
   } catch (error) {
-    console.error('Failed to fetch session (DB may be unavailable):', error);
+    console.error("Failed to fetch session (DB may be unavailable):", error);
     redirect(`/${params.lang}/sign-in`);
   }
 
@@ -28,7 +37,7 @@ export default async function AnalyticsPage({ params }: { params: { lang: Locale
   try {
     user = await getUserByEmail(session.user.email!);
   } catch (error) {
-    console.error('Failed to fetch user (DB may be unavailable):', error);
+    console.error("Failed to fetch user (DB may be unavailable):", error);
     user = null;
   }
 
@@ -39,7 +48,9 @@ export default async function AnalyticsPage({ params }: { params: { lang: Locale
           <Card>
             <CardHeader>
               <CardTitle>{dict.dashboardPage.accountSetupError}</CardTitle>
-              <CardDescription>{dict.dashboardPage.accountSetupErrorDesc}</CardDescription>
+              <CardDescription>
+                {dict.dashboardPage.accountSetupErrorDesc}
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>

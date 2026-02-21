@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getUserByEmail, getRecentSensorReadings } from "@/lib/data-access";
 import { getSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -7,9 +12,13 @@ import { type Locale } from "@/lib/i18n/config";
 import { DashboardClient } from "./dashboard-client";
 import DashboardFooter from "@/components/Layout/DashboardFooter";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({ params }: { params: { lang: Locale } }) {
+export default async function DashboardPage({
+  params,
+}: {
+  params: { lang: Locale };
+}) {
   const dict = await getDictionary(params.lang);
 
   // Get the current session — redirect on failure or missing auth
@@ -17,7 +26,7 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
   try {
     session = await getSession();
   } catch (error) {
-    console.error('Failed to fetch session (DB may be unavailable):', error);
+    console.error("Failed to fetch session (DB may be unavailable):", error);
     redirect(`/${params.lang}/sign-in`);
   }
 
@@ -31,7 +40,7 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
   try {
     user = await getUserByEmail(session.user.email!);
   } catch (error) {
-    console.error('Failed to fetch user (DB may be unavailable):', error);
+    console.error("Failed to fetch user (DB may be unavailable):", error);
     user = null;
   }
 
@@ -59,7 +68,7 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
   try {
     sensorReadings = await getRecentSensorReadings(user.id, 500);
   } catch (error) {
-    console.error('Failed to fetch sensor readings:', error);
+    console.error("Failed to fetch sensor readings:", error);
     // Return empty array to prevent page crash, dashboard will show empty state
     sensorReadings = [];
   }
@@ -73,4 +82,3 @@ export default async function DashboardPage({ params }: { params: { lang: Locale
     </div>
   );
 }
-
