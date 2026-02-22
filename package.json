@@ -2,18 +2,18 @@
   "name": "tynys",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "migrate": "node scripts/migrate.mjs",
-    "seed": "tsx scripts/seed.ts",
-    "seed:deploy": "NODE_ENV=production tsx scripts/seed.ts",
-    "seed:dummy": "npm run seed",
-    "set:admin": "dotenv -e .env.local -- tsx scripts/set-admin.ts"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "type-check": "tsc --noEmit",
+  "migrate": "node migrate.mjs",
+  "seed": "tsx scripts/seed.ts",
+  "seed:deploy": "NODE_ENV=production tsx scripts/seed.ts",
+  "seed:dummy": "npm run seed",
+  "set:admin": "dotenv -e .env.local -- tsx scripts/set-admin.ts"
+},
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
