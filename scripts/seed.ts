@@ -216,10 +216,19 @@ function valueForRun(
   max: number,
   waveFactor: number,
 ): number {
-  const baseValue = valueForSeries(sensorKey, metric, step, min, max, waveFactor);
+  const baseValue = valueForSeries(
+    sensorKey,
+    metric,
+    step,
+    min,
+    max,
+    waveFactor,
+  );
   const span = max - min;
   const runShift =
-    (deterministicUnit(`${sensorKey}:${metric}:${RUN_SALT}`) - 0.5) * span * 0.14;
+    (deterministicUnit(`${sensorKey}:${metric}:${RUN_SALT}`) - 0.5) *
+    span *
+    0.14;
   const randomShift = (Math.random() - 0.5) * span * 0.06;
   return round(clamp(baseValue + runShift + randomShift, min, max), 2);
 }
@@ -442,12 +451,12 @@ async function seedReadings(
       .limit(1);
 
     const latestTimestampMs = latestReading[0]?.timestamp.getTime() ?? 0;
-    const runOffsetMs = Number.parseInt(
-      randomBytes(2).toString("hex"),
-      16,
-    ) % 900;
+    const runOffsetMs =
+      Number.parseInt(randomBytes(2).toString("hex"), 16) % 900;
     const candidateStartMs =
-      now.getTime() - (READINGS_PER_RUN - 1) * READING_INTERVAL_MS + runOffsetMs;
+      now.getTime() -
+      (READINGS_PER_RUN - 1) * READING_INTERVAL_MS +
+      runOffsetMs;
     const startMs = Math.max(candidateStartMs, latestTimestampMs + 1);
 
     const rows: Array<typeof schema.sensorReadings.$inferInsert> = [];
@@ -470,14 +479,7 @@ async function seedReadings(
         o3: valueForRun(sensor.deviceId, "o3", i, 0, 50, 0.15),
         no2: valueForRun(sensor.deviceId, "no2", i, 0, 40, 0.15),
         ch2o: valueForRun(sensor.deviceId, "ch2o", i, 0.01, 0.12, 0.15),
-        pressure: valueForRun(
-          sensor.deviceId,
-          "pressure",
-          i,
-          900,
-          930,
-          0.02,
-        ),
+        pressure: valueForRun(sensor.deviceId, "pressure", i, 900, 930, 0.02),
         batteryLevel: Math.round(
           valueForRun(sensor.deviceId, "battery", i, 45, 100, 0.03),
         ),

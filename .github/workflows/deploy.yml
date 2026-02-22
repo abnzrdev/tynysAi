@@ -94,7 +94,7 @@ jobs:
           cache-to: type=gha,mode=max
           tags: tynys-ai:test
 
-  # ── 5. Deploy to Production ───────────────────
+  # ── 4. Deploy to Production ───────────────────
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
@@ -142,7 +142,7 @@ jobs:
             docker compose -f docker-compose.prod.yml exec -T app npm run migrate || true
 
             echo "==> Seeding production data..."
-            docker compose -f docker-compose.prod.yml exec -T app npm run seed
+            docker compose -f docker-compose.prod.yml exec -T app npm run seed || true
 
             echo "==> Health check (up to 120 seconds)..."
             for i in $(seq 1 24); do
