@@ -30,29 +30,26 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Copy standalone output (includes node_modules with sharp)
+# App build output
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy sharp native binaries from the deps stage (standalone sometimes misses them)
-COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
-COPY --from=deps /app/node_modules/@img  ./node_modules/@img
+# Copy ALL node_modules (includes tsx)
+COPY --from=deps /app/node_modules ./node_modules
 
-# Copy migration files so migrations run on startup
+# Copy migration + scripts folder
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/migrate.mjs ./migrate.mjs
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
-COPY --from=deps /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
 
-# Writable cache directory for image optimisation
 RUN mkdir -p .next/cache/images && chown -R nextjs:nodejs .next
 
 USER nextjs
 EXPOSE 3000
 ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
+
