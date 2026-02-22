@@ -16,22 +16,7 @@ build
 .vscode
 .idea
 
-# Local env and config
-.env
-.env.*
-.env.local
-.env.production
-.env.development
-.env.test
-env.text
 
-# Dev-only files not needed in the image
-__tests__
-coverage
-docs
-scripts
-*.test.*
-*.spec.*
 
 # OS
 .DS_Store

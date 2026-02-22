@@ -99,7 +99,6 @@ type(scope): brief description
 | `style` | Code style/formatting |
 | `refactor` | Code restructuring |
 | `perf` | Performance improvement |
-| `test` | Adding/updating tests |
 | `chore` | Maintenance tasks |
 
 **Examples:**

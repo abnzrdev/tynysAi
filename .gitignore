@@ -42,8 +42,6 @@ v0-landing-page-with-video/
 .pnp.js
 .yarn/install-state.gz
 
-# testing
-/coverage
 
 # next.js
 /.next/
