@@ -56,10 +56,20 @@ echo ""
 echo "🔍 Checking port 3000..."
 PORT_PID=$(lsof -ti :3000 2>/dev/null || true)
 if [ -n "$PORT_PID" ]; then
-  echo "⚠️  Port 3000 is in use by PID $PORT_PID — killing it..."
-  kill -9 $PORT_PID
-  sleep 1
-  echo "✅ Port 3000 is now free"
+  echo "⚠️  Port 3000 is in use by PID $PORT_PID."
+  read -p "Do you want to kill this process? [y/N]: " KILL_CONFIRM
+  if [[ "$KILL_CONFIRM" =~ ^[Yy]$ ]]; then
+    if kill -9 $PORT_PID 2>/dev/null; then
+      sleep 1
+      echo "✅ Port 3000 is now free"
+    else
+      echo "❌ Failed to kill process $PORT_PID. Try running this script as sudo or kill the process manually."
+      exit 1
+    fi
+  else
+    echo "❌ Cannot continue while port 3000 is in use. Please free the port and rerun the script."
+    exit 1
+  fi
 else
   echo "✅ Port 3000 is free"
 fi
