@@ -5,7 +5,6 @@ import { DashboardMapPanel, type StatValues } from "./map-panel-client";
 import { SensorChart } from "@/components/sensor-chart";
 import { SensorDistribution, type SensorSlice } from "@/components/sensor-distribution";
 import { SensorAnalytics } from "@/components/analytics/SensorAnalytics";
-import { ParticulateMetrics } from "@/components/dashboard/ParticulateMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -352,7 +351,8 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         className="scroll-mt-28"
       >
         <SectionHeader id="particulate-metrics-heading" icon={Microscope} title="Air Composition Analysis" />
-        <ParticulateMetrics />
+        {/* ParticulateMetrics temporarily disabled while debugging TDZ issue */}
+        {/* <ParticulateMetrics /> */}
       </section>
 
       <section
