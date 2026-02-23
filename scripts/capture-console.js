@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 
 async function run() {
   const out = [];
-  const browser = await puppeteer.launch({ args: ['--no-sandbox','--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   const client = await page.target().createCDPSession();
   await client.send('Runtime.enable');
@@ -14,7 +14,7 @@ async function run() {
       const text = `[cdp:exception] ${ex.text || JSON.stringify(ex)}`;
       out.push(text);
       console.error(text);
-    } catch (err) {}
+    } catch (err) { }
   });
 
   page.on('console', msg => {
@@ -30,7 +30,7 @@ async function run() {
             // ignore
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       out.push(text);
       console.log(text);
     })();
@@ -52,7 +52,7 @@ async function run() {
 
   const target = process.argv[2] || 'https://tynysai.kz/en/sign-in';
   console.log('Visiting', target);
-  await page.goto(target, { waitUntil: 'networkidle2', timeout: 30000 }).catch(err=>console.error('goto error', err.message));
+  await page.goto(target, { waitUntil: 'networkidle2', timeout: 30000 }).catch(err => console.error('goto error', err.message));
 
   // interact a bit: focus and click sign-in button if present
   try {
@@ -62,14 +62,14 @@ async function run() {
     });
     // try filling a test credential and submit
     try {
-      await page.type('input[type="email"]', 'test@example.com', {delay:50});
-      await page.type('input[type="password"]', 'password', {delay:50});
+      await page.type('input[type="email"]', 'test@example.com', { delay: 50 });
+      await page.type('input[type="password"]', 'password', { delay: 50 });
       const submit = await page.$('button[type="submit"]');
       if (submit) await submit.click();
     } catch (e) {
       // ignore if form fields not found
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // wait to collect async console messages
   await new Promise((r) => setTimeout(r, 8000));
@@ -81,4 +81,4 @@ async function run() {
   await browser.close();
 }
 
-run().catch(e=>{ console.error(e); process.exit(1); });
+run().catch(e => { console.error(e); process.exit(1); });

@@ -96,14 +96,14 @@ export function MetricCard({
                   return (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={filtered}>
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke={trend?.isPositive ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
-                      strokeWidth={2}
-                      dot={false}
-                      isAnimationActive={true}
-                    />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke={trend?.isPositive ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
+                          strokeWidth={2}
+                          dot={false}
+                          isAnimationActive={true}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   );

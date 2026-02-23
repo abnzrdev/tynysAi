@@ -149,7 +149,7 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
             : timestampObj.toLocaleString(),
         };
       })
-        .filter((reading) => Number.isFinite(reading.timestampMs) && Number.isFinite(reading.value))
+      .filter((reading) => Number.isFinite(reading.timestampMs) && Number.isFinite(reading.value))
       .sort((a, b) => a.timestampMs - b.timestampMs);
   }, [data]);
 
@@ -310,7 +310,7 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("justify-start gap-2", !dateRange && "text-muted-foreground") }>
+                <Button variant="outline" className={cn("justify-start gap-2", !dateRange && "text-muted-foreground")}>
                   <CalendarIcon className="h-4 w-4" />
                   <span className="text-sm">{formatDateRange(dateRange)}</span>
                 </Button>
