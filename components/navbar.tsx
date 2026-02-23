@@ -92,7 +92,7 @@ export function Navbar() {
   };
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
+    signOut({ callbackUrl: homeLink });
   };
 
   // Watch for video scroll state

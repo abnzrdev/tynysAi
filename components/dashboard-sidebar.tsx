@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { i18n } from "@/lib/i18n/config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DarkModeToggle from "@/components/dark-mode-toggle";
@@ -46,7 +47,18 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
   const isAdmin = user.isAdmin === "true";
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
+    let callbackUrl = '/';
+    try {
+      const parts = typeof window !== 'undefined' ? window.location.pathname.split('/') : [];
+      const currentLocale = parts && parts.length > 1 ? parts[1] : '';
+      callbackUrl = (i18n.locales as readonly string[]).includes(currentLocale)
+        ? `/${currentLocale}`
+        : '/';
+    } catch {
+      callbackUrl = '/';
+    }
+
+    signOut({ callbackUrl });
   };
 
   const navigationItems = [

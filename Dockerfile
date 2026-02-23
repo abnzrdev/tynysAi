@@ -45,6 +45,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/migrate.mjs ./migrate.mjs
 COPY --from=builder /app/scripts ./scripts
+# Ensure runtime has the library code required by scripts (seed, migrations)
+COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN mkdir -p .next/cache/images && chown -R nextjs:nodejs .next
