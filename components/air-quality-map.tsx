@@ -125,11 +125,12 @@ function aggregatePoints(readings: MapReading[]): AggregatedPoint[] {
   return Array.from(map.values());
 }
 function createPointIcon(value: number) {
-  const bp = AQI_BREAKPOINTS.find((b) => value <= b.limit) ?? AQI_BREAKPOINTS[AQI_BREAKPOINTS.length - 1];
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const bp = AQI_BREAKPOINTS.find((b) => safeValue <= b.limit) ?? AQI_BREAKPOINTS[AQI_BREAKPOINTS.length - 1];
   const html = `
     <div class="flex items-center justify-center rounded-full text-[10px] font-semibold text-primary-foreground shadow-lg border border-border/70 ${bp.tw}"
          style="width:28px;height:28px;">
-      ${Math.round(value)}
+      ${Math.round(safeValue)}
     </div>
   `;
 
@@ -152,7 +153,7 @@ function createClusterIcon(cluster: MarkerCluster) {
     return opts.aqiValue ?? 0;
   });
 
-  const avg = values.length ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+  const avg = values.length ? values.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0) / values.length : 0;
   const bp = AQI_BREAKPOINTS.find((b) => avg <= b.limit) ?? AQI_BREAKPOINTS[AQI_BREAKPOINTS.length - 1];
   const size = Math.min(44 + values.length, 76);
 
@@ -256,17 +257,17 @@ function LegendBar() {
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        {AQI_LEVELS.map((level) => (
+        {AQI_LEVELS.filter((l) => l && l.label).map((level) => (
           <Tooltip key={level.label}>
             <TooltipTrigger asChild>
               <div className="inline-flex cursor-default items-center gap-2">
-                <span className={cn("h-2.5 w-2.5 rounded-full", level.colorClass)} aria-hidden />
+                <span className={cn("h-2.5 w-2.5 rounded-full", level.colorClass || "bg-gray-400")} aria-hidden />
                 <span className="font-medium text-foreground/90">{level.label}</span>
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs">
               <span className="text-muted-foreground">AQI Range: </span>
-              <span className="font-semibold">{level.range}</span>
+              <span className="font-semibold">{level.range ?? "—"}</span>
             </TooltipContent>
           </Tooltip>
         ))}

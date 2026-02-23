@@ -162,7 +162,10 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
             {Array.from({ length: 8 }).map((_, i) => {
               const baseY = 50 + Math.sin(i) * 15;
               const baseX = i * 12.5;
+              if (!Number.isFinite(baseX) || !Number.isFinite(baseY)) return null;
               const initialPath = `M ${baseX} ${baseY} Q ${baseX + 10} ${baseY + Math.sin(i) * 10} ${baseX + 20} ${baseY}`;
+              if (!initialPath) return null;
+              const animatedPath = `M ${baseX} ${baseY + Math.sin(i + 0.5) * 5} Q ${baseX + 10} ${baseY + Math.sin(i + 0.5) * 15} ${baseX + 20} ${baseY + Math.sin(i + 0.5) * 5}`;
               return (
                 <motion.path
                   key={`wind-${i}`}
@@ -174,11 +177,7 @@ export function HeroSection({ lang, session, dict }: HeroSectionProps) {
                   animate={{
                     pathLength: 1,
                     opacity: [0.2, 0.5, 0.2],
-                    d: [
-                      initialPath,
-                      `M ${baseX} ${baseY + Math.sin(i + 0.5) * 5} Q ${baseX + 10} ${baseY + Math.sin(i + 0.5) * 15} ${baseX + 20} ${baseY + Math.sin(i + 0.5) * 5}`,
-                      initialPath,
-                    ],
+                    d: [initialPath, animatedPath, initialPath],
                   }}
                   transition={{
                     duration: 8 + i * 0.5,

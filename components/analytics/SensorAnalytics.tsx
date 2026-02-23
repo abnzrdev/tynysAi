@@ -149,7 +149,7 @@ export function SensorAnalytics({ data }: SensorAnalyticsProps) {
             : timestampObj.toLocaleString(),
         };
       })
-      .filter((reading) => Number.isFinite(reading.timestampMs))
+        .filter((reading) => Number.isFinite(reading.timestampMs) && Number.isFinite(reading.value))
       .sort((a, b) => a.timestampMs - b.timestampMs);
   }, [data]);
 

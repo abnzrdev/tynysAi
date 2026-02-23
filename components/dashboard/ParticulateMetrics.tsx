@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Cloud, Droplets, Thermometer, Wind } from "lucide-react";
@@ -18,14 +20,8 @@ type PollutionLevel = {
 };
 
 export function getPollutionLevel(pm25: number, pm10: number): PollutionLevel {
-  if (pm25 > 50 || pm10 > 100) {
-    return { status: "High", color: "red" };
-  }
-
-  if (pm25 < 25 && pm10 < 50) {
-    return { status: "Low", color: "emerald" };
-  }
-
+  if (pm25 > 50 || pm10 > 100) return { status: "High", color: "red" };
+  if (pm25 < 25 && pm10 < 50) return { status: "Low", color: "emerald" };
   return { status: "Medium", color: "amber" };
 }
 
@@ -78,7 +74,6 @@ export function ParticulateMetrics() {
         <div className="grid gap-4 md:grid-cols-5">
           <div className={`relative overflow-hidden rounded-2xl border p-5 md:col-span-2 ${tone.bg} ${tone.border} ${tone.shadow}`}>
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-foreground/5 dark:from-white/5" />
-
             <div className="relative flex items-start justify-between">
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Traffic Light</p>
@@ -93,7 +88,6 @@ export function ParticulateMetrics() {
               </div>
               <Wind className={`h-10 w-10 ${tone.text}`} />
             </div>
-
             <div className="relative mt-6 grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 rounded-xl border bg-background/70 px-3 py-2 shadow-sm">
                 <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
@@ -113,24 +107,19 @@ export function ParticulateMetrics() {
                   <Wind className="h-4 w-4" />
                   <span className="text-sm font-medium">PM2.5</span>
                 </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  ug/m3
-                </Badge>
+                <Badge variant="outline" className="font-mono text-xs">ug/m3</Badge>
               </div>
               <p className="mt-4 text-4xl font-mono font-semibold text-foreground">
                 {MOCK_SENSOR_SAMPLE.pm25.toFixed(1)}
               </p>
             </div>
-
             <div className="rounded-2xl border bg-card/80 px-4 py-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Wind className="h-4 w-4" />
                   <span className="text-sm font-medium">PM10</span>
                 </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  ug/m3
-                </Badge>
+                <Badge variant="outline" className="font-mono text-xs">ug/m3</Badge>
               </div>
               <p className="mt-4 text-4xl font-mono font-semibold text-foreground">
                 {MOCK_SENSOR_SAMPLE.pm10.toFixed(1)}
@@ -141,35 +130,27 @@ export function ParticulateMetrics() {
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="flex items-start justify-between rounded-2xl border bg-muted/40 px-4 py-4 shadow-sm">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Cloud className="h-4 w-4" />
-                <span className="text-sm font-semibold">CO2</span>
-              </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Cloud className="h-4 w-4" />
+              <span className="text-sm font-semibold">CO2</span>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.co2.toLocaleString()} ppm
             </span>
           </div>
-
           <div className="flex items-start justify-between rounded-2xl border bg-muted/40 px-4 py-4 shadow-sm">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Thermometer className="h-4 w-4" />
-                <span className="text-sm font-semibold">Temperature</span>
-              </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Thermometer className="h-4 w-4" />
+              <span className="text-sm font-semibold">Temperature</span>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.temp.toFixed(1)} C
             </span>
           </div>
-
           <div className="flex items-start justify-between rounded-2xl border bg-muted/40 px-4 py-4 shadow-sm">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Droplets className="h-4 w-4" />
-                <span className="text-sm font-semibold">Humidity</span>
-              </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Droplets className="h-4 w-4" />
+              <span className="text-sm font-semibold">Humidity</span>
             </div>
             <span className="font-mono text-lg font-semibold text-foreground">
               {MOCK_SENSOR_SAMPLE.hum.toFixed(1)}%

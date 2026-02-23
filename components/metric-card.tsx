@@ -90,8 +90,12 @@ export function MetricCard({
             {/* Mini Sparkline */}
             {sparklineData && sparklineData.length > 0 && (
               <div className="h-10 w-20 flex-shrink-0" aria-label="Trend sparkline">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={sparklineData}>
+                {(() => {
+                  const filtered = sparklineData.filter((p) => Number.isFinite(p?.value));
+                  if (filtered.length === 0) return null;
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={filtered}>
                     <Line
                       type="monotone"
                       dataKey="value"
@@ -100,8 +104,10 @@ export function MetricCard({
                       dot={false}
                       isAnimationActive={true}
                     />
-                  </LineChart>
-                </ResponsiveContainer>
+                      </LineChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
               </div>
             )}
           </div>
