@@ -15,7 +15,7 @@ const OWNER_EMAIL = "hi@tynys.kz";
 const DEFAULT_CITY = "Almaty";
 const DEFAULT_COUNTRY = "KZ";
 const READINGS_PER_RUN = Number.parseInt(
-  process.env.SEED_READINGS_PER_RUN ?? "12",
+  process.env.SEED_READINGS_PER_RUN ?? "40",
   10,
 );
 const READING_INTERVAL_MS = Number.parseInt(
@@ -271,9 +271,44 @@ async function ensureUser(
 async function seedUsers(db: Db) {
   section("Users");
 
-  const owner = await ensureUser(db, OWNER_EMAIL, {
-    name: "Tynys Owner",
-  });
+  // Remove any existing owner user and recreate with a known password
+  const existingOwner = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.email, OWNER_EMAIL))
+    .limit(1);
+
+  const ownerPassword = process.env.OWNER_PASSWORD ?? "pass1234";
+  const ownerPasswordHash = await bcrypt.hash(ownerPassword, 12);
+
+  let owner;
+  if (existingOwner.length > 0) {
+    console.log(`- updating existing user: ${OWNER_EMAIL} (id=${existingOwner[0].id})`);
+    const updated = await db
+      .update(schema.users)
+      .set({
+        name: "Tynys Owner",
+        password: ownerPasswordHash,
+        isAdmin: "true",
+      })
+      .where(eq(schema.users.id, existingOwner[0].id))
+      .returning();
+
+    owner = updated[0];
+  } else {
+    const insertedOwner = await db
+      .insert(schema.users)
+      .values({
+        email: OWNER_EMAIL,
+        name: "Tynys Owner",
+        password: ownerPasswordHash,
+        isAdmin: "true",
+      })
+      .returning();
+
+    owner = insertedOwner[0];
+    console.log(`- created owner: ${OWNER_EMAIL} (id=${owner.id})`);
+  }
 
   const e2eEmail = process.env.E2E_USER_EMAIL?.trim();
   const e2ePassword = process.env.E2E_USER_PASSWORD;
@@ -352,8 +387,29 @@ async function upsertSensor(
     .limit(1);
 
   if (existing.length > 0) {
-    console.log(`  - found sensor: ${sensor.deviceId} (id=${existing[0].id})`);
-    return existing[0];
+    const [updated] = await db
+      .update(schema.sensors)
+      .set({
+        siteId,
+        sensorType: sensor.sensorType,
+        hardwareVersion: sensor.hardwareVersion,
+        firmwareVersion: sensor.firmwareVersion,
+        latitude: sensor.latitude,
+        longitude: sensor.longitude,
+        altitude: sensor.altitude,
+        environmentType: sensor.environmentType,
+        isActive: true,
+        metadataJson: {
+          ...sensor.metadata,
+          siteName,
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.sensors.id, existing[0].id))
+      .returning();
+
+    console.log(`  - updated sensor: ${sensor.deviceId} (id=${updated.id})`);
+    return updated;
   }
 
   const inserted = await db
@@ -403,6 +459,8 @@ async function seedSitesAndSensors(db: Db) {
     deviceId: string;
     siteName: string;
     transitType: string | null;
+    latitude: number | null;
+    longitude: number | null;
   }> = [];
 
   for (const site of seedSites) {
@@ -421,6 +479,8 @@ async function seedSitesAndSensors(db: Db) {
         deviceId: sensorRow.deviceId,
         siteName: site.siteName,
         transitType: site.transitType,
+        latitude: sensorRow.latitude ?? null,
+        longitude: sensorRow.longitude ?? null,
       });
     }
   }
@@ -436,6 +496,8 @@ async function seedReadings(
     deviceId: string;
     siteName: string;
     transitType: string | null;
+    latitude: number | null;
+    longitude: number | null;
   }>,
 ) {
   section("Sensor Readings");
@@ -494,7 +556,10 @@ async function seedReadings(
           1.0,
           0.03,
         ),
-        location: sensor.siteName,
+        location:
+          sensor.latitude != null && sensor.longitude != null
+            ? `${sensor.latitude},${sensor.longitude}`
+            : sensor.siteName,
         transportType: sensor.transitType ?? undefined,
         userId: ownerUserId,
       });

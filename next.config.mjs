@@ -16,6 +16,7 @@ const nextConfig = {
 	// Use sharp for image optimisation in production
 	images: {
 		remotePatterns: [],
+		formats: ["image/avif", "image/webp"],
 	},
 	webpack: (config) => {
 		config.resolve = config.resolve || {};

@@ -4,9 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import DarkModeToggle from '@/components/dark-mode-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -34,7 +33,7 @@ type NavbarTranslations = {
   signOut: string;
   menu: string;
   language: string;
-  theme: string;
+  liveAqi: string;
 };
 
 const translations: Record<string, NavbarTranslations> = {
@@ -44,7 +43,7 @@ const translations: Record<string, NavbarTranslations> = {
     signOut: "Sign Out",
     menu: "Menu",
     language: "Language",
-    theme: "Theme"
+    liveAqi: "Live AQI"
   },
   ru: {
     login: "Вход",
@@ -52,7 +51,7 @@ const translations: Record<string, NavbarTranslations> = {
     signOut: "Выйти",
     menu: "Меню",
     language: "Язык",
-    theme: "Тема"
+    liveAqi: "AQI сейчас"
   },
   kz: {
     login: "Кіру",
@@ -60,7 +59,7 @@ const translations: Record<string, NavbarTranslations> = {
     signOut: "Шығу",
     menu: "Мәзір",
     language: "Тіл",
-    theme: "Тақырып"
+    liveAqi: "Тікелей AQI"
   }
 };
 
@@ -68,7 +67,6 @@ export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [isVideoScrolled, setIsVideoScrolled] = useState(false);
   const isDashboardRoute = pathname?.includes('/dashboard');
   
   // Extract current locale from pathname or use default
@@ -94,79 +92,34 @@ export function Navbar() {
   const handleSignOut = () => {
     signOut({ callbackUrl: homeLink });
   };
-
-  // Watch for video scroll state
-  useEffect(() => {
-    const checkVideoScroll = () => {
-      if (typeof document !== 'undefined') {
-        const hasScrolled = document.body.hasAttribute('data-video-scrolled');
-        setIsVideoScrolled(hasScrolled);
-      }
-    };
-
-    // Check initially
-    checkVideoScroll();
-
-    // Listen for custom event from HeroSection
-    const handleVideoScroll = (event: CustomEvent) => {
-      setIsVideoScrolled(event.detail === true);
-    };
-
-    window.addEventListener('videoScrolled', handleVideoScroll as EventListener);
-
-    // Also watch for attribute changes as fallback
-    if (typeof document !== 'undefined') {
-      const observer = new MutationObserver(checkVideoScroll);
-      observer.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['data-video-scrolled'],
-      });
-
-      return () => {
-        window.removeEventListener('videoScrolled', handleVideoScroll as EventListener);
-        observer.disconnect();
-      };
-    }
-
-    return () => {
-      window.removeEventListener('videoScrolled', handleVideoScroll as EventListener);
-    };
-  }, []);
   
-  // Determine if navbar has solid background (needs dark text in light mode)
-  const hasSolidBackground = isDashboardRoute || isVideoScrolled;
-  
-  // Make navbar always sticky at top with solid background on dashboard or after scrolling past hero
-  const navBase = hasSolidBackground
-    ? "fixed top-0 z-50 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md border-b border-border/60 shadow-sm transition-all duration-300 ease-in-out"
-    : "fixed top-0 z-50 w-full bg-transparent border-none transition-all duration-300 ease-in-out";
+  const hasSolidBackground = true;
+
+  const navBase = "fixed top-0 z-50 w-full border-b border-cyan-400/20 bg-slate-950 shadow-[0_8px_28px_rgba(2,6,23,0.45)] backdrop-blur-md";
   const showProfileActions = status === 'authenticated' && session?.user && isDashboardRoute;
   
-  // Text color classes based on background state
-  // When transparent: white text
-  // When solid: use foreground color (dark in light mode, light in dark mode)
   const textColorClass = hasSolidBackground 
-    ? "text-foreground" 
-    : "text-white";
+    ? "text-slate-100" 
+    : "text-cyan-50";
   const logoTextClass = hasSolidBackground
-    ? "text-2xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400 bg-clip-text text-transparent"
-    : "text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent";
+    ? "text-2xl font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent"
+    : "text-2xl font-bold bg-gradient-to-r from-cyan-200 to-blue-300 bg-clip-text text-transparent";
   const buttonTextClass = hasSolidBackground
-    ? "text-foreground hover:bg-muted hover:text-foreground"
-    : "text-white hover:bg-white/10 hover:text-white";
+    ? "text-slate-100 hover:bg-slate-800 hover:text-slate-100"
+    : "text-cyan-50 hover:bg-slate-900/45 hover:text-cyan-50";
   const iconColorClass = hasSolidBackground
-    ? "text-foreground"
-    : "text-white";
+    ? "text-slate-100"
+    : "text-cyan-50";
 
   return (
     <nav className={navBase}>
       <div className="container mx-auto px-6">
-        <div className={`flex h-20 items-center justify-between transition-colors duration-300 ${textColorClass}`}>
+        <div className={`flex h-24 items-center justify-between transition-colors duration-300 ${textColorClass}`}>
           {/* Logo - Left Side */}
           <div className="flex items-center">
             <Link href={homeLink} className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <Image 
-                src="/tynys-logo.png" 
+                src="/tynys-logo.webp" 
                 alt="Tynys Logo" 
                 width={52} 
                 height={52}
@@ -176,24 +129,29 @@ export function Navbar() {
               <span className={logoTextClass}>
                 TynysAi
               </span>
+              {hasSolidBackground && !isDashboardRoute ? (
+                <span className="live-aqi-pill hidden rounded-full border border-cyan-300/30 bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-200 lg:inline-flex">
+                  <span className="live-aqi-dot mr-1.5 inline-block h-1.5 w-1.5 rounded-full" aria-hidden />
+                  {t.liveAqi}
+                </span>
+              ) : null}
             </Link>
           </div>
 
           {/* Desktop Navigation - Hidden on mobile */}
-          <div className={`hidden md:flex items-center gap-3 ${hasSolidBackground ? '' : '[&_svg]:text-white [&_button]:text-white [&_button]:hover:bg-white/10'}`}>
+          <div className="hidden md:flex items-center gap-4">
             <LanguageSwitcher />
-            <DarkModeToggle />
             
             {/* Login/Signup Buttons - Show when not authenticated */}
             {status === 'unauthenticated' && (
-              <div className="flex items-center gap-3 ml-3">
+              <div className="flex items-center gap-4 ml-4">
                 <Link href={`/${locale}/sign-in`}>
-                  <Button variant="ghost" size="default" className={`text-lg h-11 px-5 transition-colors duration-300 ${buttonTextClass}`}>
+                  <Button variant="ghost" size="default" className={`text-base h-12 px-6 transition-colors duration-300 ${buttonTextClass}`}>
                     {t.login}
                   </Button>
                 </Link>
                 <Link href={`/${locale}/sign-up`}>
-                  <Button size="default" className={`text-lg h-11 px-5 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white hover:text-white transition-all duration-300`}>
+                  <Button size="default" className="h-12 bg-gradient-to-r from-cyan-500 to-blue-600 px-6 text-base text-white shadow-[0_8px_22px_rgba(14,116,144,0.35)] transition-all duration-300 hover:from-cyan-400 hover:to-blue-500 hover:text-white">
                     {t.signUp}
                   </Button>
                 </Link>
@@ -204,8 +162,8 @@ export function Navbar() {
             {showProfileActions && (
               <DropdownMenu>
                 <DropdownMenuTrigger className="focus:outline-none">
-                  <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-2">
-                    <Avatar className="h-11 w-11 border-2 border-primary">
+                  <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity ml-4">
+                    <Avatar className="h-12 w-12 border-2 border-primary">
                       <AvatarImage 
                         src={session.user.image || `https://api.dicebear.com/7.x/initials/svg?seed=${session.user.name || session.user.email}`} 
                         alt={session.user.name || 'User avatar'}
@@ -244,8 +202,8 @@ export function Navbar() {
           <div className="md:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className={`transition-colors duration-300 ${buttonTextClass}`}>
-                  <Menu className={`h-7 w-7 transition-colors duration-300 ${iconColorClass}`} />
+                <Button variant="ghost" size="icon" className={`h-12 w-12 transition-colors duration-300 ${buttonTextClass}`}>
+                  <Menu className={`h-6 w-6 transition-colors duration-300 ${iconColorClass}`} />
                   <span className="sr-only">{t.menu}</span>
                 </Button>
               </SheetTrigger>
@@ -279,14 +237,14 @@ export function Navbar() {
 
                   {/* Login/Signup Buttons - Show when not authenticated */}
                   {status === 'unauthenticated' && (
-                    <div className="flex flex-col gap-3 pb-4 border-b border-border">
+                    <div className="flex flex-col gap-4 pb-4 border-b border-border">
                       <Link href={`/${locale}/sign-in`} onClick={() => setIsOpen(false)}>
-                        <Button variant="outline" className="w-full text-lg h-11">
+                        <Button variant="outline" className="h-12 w-full border-cyan-300/35 bg-slate-900 text-base text-slate-100 hover:bg-slate-800">
                           {t.login}
                         </Button>
                       </Link>
                       <Link href={`/${locale}/sign-up`} onClick={() => setIsOpen(false)}>
-                        <Button className="w-full text-lg h-11 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700">
+                        <Button className="h-12 w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-base hover:from-cyan-400 hover:to-blue-500">
                           {t.signUp}
                         </Button>
                       </Link>
@@ -298,10 +256,6 @@ export function Navbar() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{t.language}</span>
                       <LanguageSwitcher />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{t.theme}</span>
-                      <DarkModeToggle />
                     </div>
                   </div>
 
@@ -328,4 +282,3 @@ export function Navbar() {
     </nav>
   );
 }
-

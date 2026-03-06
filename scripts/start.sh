@@ -36,6 +36,15 @@ echo "✅ Env vars OK"
 # ── 3. Move to project root ──────────────────────────────────
 cd "$ROOT_DIR"
 
+# ── 3.5 Reset Next.js build cache to avoid stale chunk errors ─
+echo "🧹 Resetting Next.js build cache..."
+if [ -d ".next" ]; then
+  STALE_DIR=".next_stale_$(date +%s)"
+  mv ".next" "$STALE_DIR" || true
+fi
+mkdir -p .next
+echo "✅ Next.js cache reset"
+
 # ── 4. Check Docker is running ──────────────────────────────
 if ! docker info > /dev/null 2>&1; then
   echo "❌ Docker is not running. Please start Docker first."

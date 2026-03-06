@@ -36,7 +36,7 @@ async function getLocale(request: NextRequest): Promise<string> {
     
     // Check cookie
     const localeCookie = request.cookies.get('NEXT_LOCALE')?.value;
-    if (localeCookie && i18n.locales.includes(localeCookie as any)) {
+    if (localeCookie && i18n.locales.includes(localeCookie as (typeof i18n.locales)[number])) {
       return localeCookie;
     }
 
@@ -74,9 +74,34 @@ export async function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 
+  // Normalize locale root paths (e.g. /en -> /en/) to avoid edge-case 404s
+  if (i18n.locales.some((locale) => pathname === `/${locale}`)) {
+    const normalized = new URL(`${pathname}/`, request.url);
+    normalized.search = request.nextUrl.search;
+    return NextResponse.rewrite(normalized);
+  }
+
   if (!pathnameHasLocale) {
-    // Redirect to locale-prefixed URL using location-based detection
     const locale = await getLocale(request);
+
+    // Redirect authenticated users visiting root landing directly to dashboard
+    if (pathname === '/') {
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (token) {
+        const dashboardUrl = new URL(`/${locale}/dashboard`, request.url);
+        dashboardUrl.search = request.nextUrl.search;
+
+        const response = NextResponse.redirect(dashboardUrl);
+        response.cookies.set('NEXT_LOCALE', locale, { maxAge: 60 * 60 * 24 * 365 });
+        return response;
+      }
+    }
+
+    // Redirect to locale-prefixed URL using location-based detection
     const newUrl = new URL(`/${locale}${pathname}`, request.url);
     newUrl.search = request.nextUrl.search;
     
@@ -88,6 +113,20 @@ export async function middleware(request: NextRequest) {
   // Extract locale from pathname for protected routes check
   const locale = pathname.split('/')[1];
   const pathWithoutLocale = pathname.slice(locale.length + 1);
+  const isLocaleLanding = pathWithoutLocale === '' || pathWithoutLocale === '/';
+
+  if (isLocaleLanding) {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    if (token) {
+      const dashboardUrl = new URL(`/${locale}/dashboard`, request.url);
+      dashboardUrl.search = request.nextUrl.search;
+      return NextResponse.redirect(dashboardUrl);
+    }
+  }
 
   // Check authentication for protected routes
   const protectedPaths = ['/dashboard'];

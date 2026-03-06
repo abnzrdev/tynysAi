@@ -14,7 +14,6 @@ import {
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
-import DarkModeToggle from "@/components/dark-mode-toggle";
 import { i18n, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -186,7 +185,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-card ring-1 ring-border">
               <Image
-                src="/tynys-logo.png"
+                src="/tynys-logo.webp"
                 alt="TynysAi logo"
                 width={44}
                 height={44}
@@ -328,8 +327,7 @@ export function SidebarLayout({ locale, children }: SidebarLayoutProps) {
         style={sidebarStyles}
       >
         <header className="sticky top-0 z-30 flex items-center justify-end gap-3 border-b border-border bg-background/90 px-4 py-2 backdrop-blur transition-colors">
-          <LanguageSwitcher />
-          <DarkModeToggle />
+          <LanguageSwitcher iconOnly />
           {status === "authenticated" && session?.user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

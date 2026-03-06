@@ -18,7 +18,7 @@ const languageNames: Record<Locale, string> = {
   kz: 'Қазақша',
 };
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ iconOnly = false }: { iconOnly?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -38,6 +38,26 @@ export function LanguageSwitcher() {
     router.push(newPath);
     router.refresh();
   };
+
+  const switchToNextLocale = () => {
+    const currentIndex = i18n.locales.indexOf(currentLocale);
+    const nextIndex = (currentIndex + 1) % i18n.locales.length;
+    switchLocale(i18n.locales[nextIndex]);
+  };
+
+  if (iconOnly) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={switchToNextLocale}
+        aria-label="Change language"
+        title={`Language: ${languageNames[currentLocale]}`}
+      >
+        <Globe className="h-4 w-4 text-muted-foreground" />
+      </Button>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -93,4 +113,3 @@ export function LanguageSwitcherCompact() {
     </Button>
   );
 }
-
