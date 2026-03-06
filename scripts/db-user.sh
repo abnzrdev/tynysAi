@@ -17,7 +17,7 @@ echo "────────────────────────�
 # 0) Check container is running
 if ! docker ps --format '{{.Names}}' | grep -q "$CONTAINER"; then
   echo "❌ Container '$CONTAINER' is not running."
-  echo "   Run: docker compose up -d postgres"
+  echo "   Run: docker compose up -d postgres  (or docker-compose up -d postgres)"
   exit 1
 fi
 

@@ -26,15 +26,24 @@ fi
 
 # Rebuild Docker image (no cache)
 echo "Building Docker image..."
-docker compose -f "$COMPOSE_FILE" build --no-cache "$APP_SERVICE"
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo "❌ Neither 'docker compose' nor 'docker-compose' found. Install the Compose plugin or docker-compose."
+  exit 1
+fi
+
+"${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" build --no-cache "$APP_SERVICE"
 
 # Restart app container with new image
 echo "Restarting app container..."
-docker compose -f "$COMPOSE_FILE" up -d --force-recreate "$APP_SERVICE"
+"${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" up -d --force-recreate "$APP_SERVICE"
 
 # Wait for healthy startup
 echo "Waiting for app logs..."
-docker compose -f "$COMPOSE_FILE" logs -f "$APP_SERVICE" &
+"${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" logs -f "$APP_SERVICE" &
 LOGS_PID=$!
 sleep 10
 kill $LOGS_PID || true

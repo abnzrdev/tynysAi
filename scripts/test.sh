@@ -107,7 +107,16 @@ if command -v docker &>/dev/null; then
   else
     warn "Postgres container not running."
     if prompt_yes_no "$(echo -e "${YELLOW}Start it now? [Y/n]: ${RESET}")" true; then
-      docker compose up -d postgres
+      # Detect available compose command
+      if docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD=(docker compose)
+      elif command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD=(docker-compose)
+      else
+        error "Neither 'docker compose' nor 'docker-compose' found. Install docker-compose-plugin or docker-compose."
+      fi
+
+      "${COMPOSE_CMD[@]}" up -d postgres
       sleep 3
       success "Postgres started"
     else
