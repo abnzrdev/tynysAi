@@ -87,3 +87,4 @@ QUICK_START.md
 /blob-report/
 /playwright/.cache/
 e2e/.auth/
+.aider*
