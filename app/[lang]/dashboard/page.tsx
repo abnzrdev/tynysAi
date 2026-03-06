@@ -10,7 +10,6 @@ import { getSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
 import { DashboardClient } from "./dashboard-client";
-import DashboardFooter from "@/components/Layout/DashboardFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +77,6 @@ export default async function DashboardPage({
       <div className="flex-1 mx-auto max-w-7xl space-y-10 p-4 text-[17px] md:p-6 md:text-[18px] lg:p-8 overflow-x-hidden">
         <DashboardClient readings={sensorReadings} dict={dict.dashboardPage} />
       </div>
-      <DashboardFooter />
     </div>
   );
 }

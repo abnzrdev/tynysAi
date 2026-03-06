@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { DashboardMapPanel } from "./map-panel-client";
-import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
 import { NearbyDevicesPanel } from "@/components/nearby-devices-panel";
+import { LanguageSwitcherCompact } from "@/components/language-switcher";
+import { CompactActivityFeed } from "@/components/compact-activity-feed";
 import { SensorChart } from "@/components/sensor-chart";
 import { SensorDistribution, type SensorSlice } from "@/components/sensor-distribution";
 import { fetchNearbyDevices, type NearbyDevice } from "@/lib/device-api";
+import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -27,8 +29,10 @@ import {
   MapPin,
   Microscope,
   Radio,
+  Search,
   TrendingUp,
-  Wind,
+  House,
+  Route,
   type LucideIcon,
 } from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
@@ -82,6 +86,7 @@ type SectionHeaderProps = {
 };
 
 type DashboardLocale = "en" | "ru" | "kz";
+type SidebarAction = "search" | "home" | "location" | "route" | "trends";
 
 const DASHBOARD_UI_TEXT: Record<
   DashboardLocale,
@@ -112,12 +117,16 @@ const DASHBOARD_UI_TEXT: Record<
     admin: string;
     operator: string;
     signOut: string;
-    recentReadings: string;
-    preparingPdf: string;
-    downloadData: string;
     justNow: string;
     airCompositionAnalysis: string;
     average: string;
+    search: string;
+    home: string;
+    locate: string;
+    locating: string;
+    route: string;
+    close: string;
+    routeComingSoon: string;
   }
 > = {
   en: {
@@ -147,12 +156,16 @@ const DASHBOARD_UI_TEXT: Record<
     admin: "Admin",
     operator: "Operator",
     signOut: "Sign Out",
-    recentReadings: "Recent Readings",
-    preparingPdf: "Preparing PDF...",
-    downloadData: "Download Data",
     justNow: "just now",
     airCompositionAnalysis: "Air Composition Analysis",
     average: "Average",
+    search: "Search",
+    home: "Home",
+    locate: "Location",
+    locating: "Locating...",
+    route: "Route",
+    close: "Close",
+    routeComingSoon: "Route to nearest clean-air zone is coming next.",
   },
   ru: {
     filters: "Фильтры",
@@ -181,12 +194,16 @@ const DASHBOARD_UI_TEXT: Record<
     admin: "Админ",
     operator: "Оператор",
     signOut: "Выйти",
-    recentReadings: "Последние показания",
-    preparingPdf: "Подготовка PDF...",
-    downloadData: "Скачать данные",
     justNow: "сейчас",
     airCompositionAnalysis: "Анализ состава воздуха",
     average: "Среднее",
+    search: "Поиск",
+    home: "Главная",
+    locate: "Локация",
+    locating: "Определяем...",
+    route: "Маршрут",
+    close: "Закрыть",
+    routeComingSoon: "Маршрут до ближайшей зоны с чистым воздухом будет добавлен следующим шагом.",
   },
   kz: {
     filters: "Сүзгілер",
@@ -215,12 +232,16 @@ const DASHBOARD_UI_TEXT: Record<
     admin: "Әкімші",
     operator: "Оператор",
     signOut: "Шығу",
-    recentReadings: "Соңғы көрсеткіштер",
-    preparingPdf: "PDF дайындалуда...",
-    downloadData: "Деректерді жүктеу",
     justNow: "қазір",
     airCompositionAnalysis: "Ауа құрамын талдау",
     average: "Орташа",
+    search: "Іздеу",
+    home: "Басты",
+    locate: "Орналасу",
+    locating: "Анықталуда...",
+    route: "Бағыт",
+    close: "Жабу",
+    routeComingSoon: "Ең жақын таза ауа аймағына бағыттау келесі қадамда қосылады.",
   },
 };
 
@@ -269,12 +290,6 @@ const NEARBY_DEVICES_TEXT: Record<
   },
 };
 
-const DEVICE_STATUS_CLASS: Record<NearbyDevice["status"], string> = {
-  online: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  idle: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  offline: "bg-slate-500/15 text-slate-300 border-slate-500/40",
-};
-
 function SectionHeader({ id, icon: Icon, title, className }: SectionHeaderProps) {
   return (
     <div
@@ -296,13 +311,20 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const [selectedSensor, setSelectedSensor] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedTransportType, setSelectedTransportType] = useState<string>("all");
+  const [sensorSearchQuery, setSensorSearchQuery] = useState("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isAnalyticsDialogOpen, setIsAnalyticsDialogOpen] = useState(false);
-  const [recentReadingsOpen, setRecentReadingsOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isMobileAccountOpen, setIsMobileAccountOpen] = useState(false);
+  const [isMobileSearchDialogOpen, setIsMobileSearchDialogOpen] = useState(false);
+  const [isRouteDialogOpen, setIsRouteDialogOpen] = useState(false);
+  const [isExportingReport, setIsExportingReport] = useState(false);
+  const [mobileMapKey, setMobileMapKey] = useState(0);
+  const [isMobileLocationActive, setIsMobileLocationActive] = useState(false);
+  const [isMobileLocationPending, setIsMobileLocationPending] = useState(false);
+  const [desktopMapKey, setDesktopMapKey] = useState(0);
+  const [isDesktopLocationActive, setIsDesktopLocationActive] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [nearbyDevices, setNearbyDevices] = useState<NearbyDevice[]>([]);
   const [isNearbyLoading, setIsNearbyLoading] = useState(false);
@@ -339,6 +361,11 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const filteredReadings = useMemo(() => {
     let filtered = [...readings];
 
+    if (sensorSearchQuery.trim()) {
+      const query = sensorSearchQuery.trim().toLowerCase();
+      filtered = filtered.filter((reading) => reading.sensorId.toLowerCase().includes(query));
+    }
+
     if (selectedSensor !== "all") {
       filtered = filtered.filter((reading) => reading.sensorId === selectedSensor);
     }
@@ -364,7 +391,15 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     return filtered.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-  }, [readings, selectedSensor, selectedLocation, selectedTransportType, startDate, endDate]);
+  }, [
+    readings,
+    sensorSearchQuery,
+    selectedSensor,
+    selectedLocation,
+    selectedTransportType,
+    startDate,
+    endDate,
+  ]);
 
   const statValues: StatValues = useMemo(() => {
     const uniqueSensors = new Set(filteredReadings.map((r) => r.sensorId));
@@ -426,13 +461,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       .slice(0, 2);
   };
 
-  const formatRecentTimestamp = (timestamp: string | Date | null) => {
-    if (!timestamp) return ui.justNow;
-    const date = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
-    if (Number.isNaN(date.getTime())) return ui.justNow;
-    return date.toLocaleTimeString();
-  };
-
   const handleSignOut = () => {
     let callbackUrl = "/";
     if (typeof window !== "undefined") {
@@ -446,13 +474,9 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     if (typeof window === "undefined") return;
 
     const media = window.matchMedia("(max-width: 1023px)");
-    const mobileUa =
-      /Android|iPhone|iPad|iPod|Mobile|Windows Phone|Opera Mini|IEMobile/i.test(
-        window.navigator.userAgent,
-      );
 
     const apply = () => {
-      setIsMobileDevice(media.matches || mobileUa);
+      setIsMobileDevice(media.matches);
     };
 
     apply();
@@ -462,6 +486,14 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    if (isMobileDevice) {
+      setNearbyDevices([]);
+      setIsNearbyLoading(false);
+      setHasNearbyError(false);
+      return;
+    }
+
     if (!("geolocation" in navigator)) {
       setHasNearbyError(true);
       return;
@@ -509,7 +541,139 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     return () => {
       isActive = false;
     };
+  }, [isMobileDevice]);
+
+  const handleMobileSearchOpen = () => {
+    setIsMobileSearchDialogOpen(true);
+  };
+
+  const handleMobileHome = () => {
+    setMobileMapKey((current) => current + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleMobileLocationToggle = () => {
+    if (isMobileLocationActive) {
+      setIsMobileLocationActive(false);
+      setIsMobileLocationPending(false);
+      return;
+    }
+
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setIsMobileLocationActive(false);
+      return;
+    }
+
+    setIsMobileLocationPending(true);
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setIsMobileLocationActive(true);
+        setIsMobileLocationPending(false);
+      },
+      () => {
+        setIsMobileLocationActive(false);
+        setIsMobileLocationPending(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
+    );
+  };
+
+  const handleRouteAction = () => {
+    setIsRouteDialogOpen(true);
+  };
+
+  const handleDesktopHome = useCallback(() => {
+    setDesktopMapKey((current) => current + 1);
+    setIsDesktopLocationActive(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const handleDesktopLocationToggle = useCallback(() => {
+    if (isDesktopLocationActive) {
+      setIsDesktopLocationActive(false);
+      return;
+    }
+
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setIsDesktopLocationActive(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setIsDesktopLocationActive(true);
+      },
+      () => {
+        setIsDesktopLocationActive(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
+    );
+  }, [isDesktopLocationActive]);
+
+  const handleDesktopExportReport = useCallback(async () => {
+    if (!filteredReadings.length || isExportingReport) return;
+
+    setIsExportingReport(true);
+
+    try {
+      await exportSensorReportPdf(
+        filteredReadings.map((reading) => ({
+          timestamp: reading.timestamp,
+          value: reading.value,
+          sensorId: reading.sensorId,
+          location: reading.location,
+        })),
+        {
+          projectName: "TynysAi",
+          dateRange: {
+            start: startDate ? new Date(startDate) : null,
+            end: endDate ? new Date(endDate) : null,
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Failed to export report:", error);
+    } finally {
+      setIsExportingReport(false);
+    }
+  }, [endDate, filteredReadings, isExportingReport, startDate]);
+
+  useEffect(() => {
+    const onAction = (event: Event) => {
+      const customEvent = event as CustomEvent<{ action?: SidebarAction }>;
+      const action = customEvent.detail?.action;
+      if (!action) return;
+
+      if (action === "home") {
+        handleDesktopHome();
+        return;
+      }
+      if (action === "location") {
+        handleDesktopLocationToggle();
+        return;
+      }
+      if (action === "route") {
+        setIsRouteDialogOpen(true);
+        return;
+      }
+      if (action === "trends") {
+        setIsAnalyticsDialogOpen(true);
+      }
+    };
+
+    const onSearch = (event: Event) => {
+      const customEvent = event as CustomEvent<{ query?: string }>;
+      setSensorSearchQuery(customEvent.detail?.query ?? "");
+    };
+
+    window.addEventListener("dashboard:action", onAction as EventListener);
+    window.addEventListener("dashboard:search", onSearch as EventListener);
+
+    return () => {
+      window.removeEventListener("dashboard:action", onAction as EventListener);
+      window.removeEventListener("dashboard:search", onSearch as EventListener);
+    };
+  }, [handleDesktopHome, handleDesktopLocationToggle]);
 
   const statNumbers = useMemo(() => {
     const values = filteredReadings.map((r) => r.value);
@@ -643,7 +807,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   );
 
   const overlayPanelClass =
-    "rounded-2xl border border-cyan-400/20 bg-slate-950/78 backdrop-blur-md shadow-2xl";
+    "rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl";
 
   const scrollToSection = (sectionId: string) => {
     const target = document.getElementById(sectionId);
@@ -652,33 +816,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     const offset = 96;
     const y = target.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top: y, behavior: "smooth" });
-  };
-
-  const downloadPdf = async () => {
-    if (!filteredReadings.length) return;
-
-    setIsExporting(true);
-    try {
-      await exportSensorReportPdf(
-        filteredReadings.map((reading) => ({
-          timestamp: reading.timestamp,
-          value: reading.value,
-          sensorId: reading.sensorId,
-          location: reading.location,
-        })),
-        {
-          projectName: "TynysAi Air Quality Report",
-          dateRange: {
-            start: startDate ? new Date(startDate) : null,
-            end: endDate ? new Date(endDate) : null,
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Failed to export PDF report:", error);
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   const analyticsContent = (
@@ -767,37 +904,270 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   if (isMobileDevice) {
     return (
-      <div className="relative isolate min-h-screen space-y-4 pb-24">
+      <div className="relative isolate min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
         <DashboardMapPanel
+          key={`mobile-map-${mobileMapKey}`}
           readings={filteredReadings}
           emptyMapText={dict.noGeocodedData}
           recentActivity={activityFeed}
           feedTitle={dict.recentIotData}
           feedEmptyText={dict.noRecentActivity}
-          mapHeightClass="h-[70vh] min-h-[480px]"
+          mapHeightClass="h-[100dvh]"
           backgroundMode={false}
           showFeedOverlay={false}
           mobileMode
+          minimalMode
+          showLegend={false}
+          useUserLocation={isMobileLocationActive}
+          showUserStatus
+          showUserStatusAsPopover
+          showLanguageToggle={false}
+          className="fixed inset-0"
         />
 
-        <section className="px-4">
-          <NearbyDevicesPanel
-            devices={nearbyDevices}
-            loading={isNearbyLoading}
-            error={hasNearbyError}
-            text={nearbyText}
-          />
-        </section>
+        <div className="pointer-events-none fixed inset-0 z-20 bg-slate-950/10" />
 
-        <div className="fixed bottom-6 right-4 z-30">
-          <Button
-            size="sm"
-            className="border border-red-400/45 bg-red-600/90 text-white hover:bg-red-500"
-            onClick={handleSignOut}
-          >
-            {ui.signOut}
-          </Button>
+        <Button
+          size="sm"
+          className={cn(
+            "fixed right-3 top-1/2 z-40 h-11 w-11 -translate-y-1/2 px-0",
+            isMobileLocationActive
+              ? "bg-blue-600 text-white hover:bg-blue-500"
+              : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+          )}
+          onClick={handleMobileLocationToggle}
+          disabled={isMobileLocationPending}
+          aria-label={isMobileLocationPending ? ui.locating : ui.locate}
+          title={isMobileLocationPending ? ui.locating : ui.locate}
+        >
+          <MapPin className={cn("h-4 w-4", isMobileLocationPending ? "animate-pulse" : undefined)} />
+        </Button>
+
+        {session?.user ? (
+          <div className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-40 flex items-center">
+            <Popover open={isMobileAccountOpen} onOpenChange={setIsMobileAccountOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="pointer-events-auto rounded-full border border-slate-700 bg-slate-900 p-0.5 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label={ui.account}
+                >
+                  <Avatar className="h-10 w-10 border border-slate-700">
+                    <AvatarImage src={session.user.image ?? undefined} alt={session.user.name ?? ui.account} />
+                    <AvatarFallback className="bg-slate-800 text-slate-100">
+                      {getUserInitials(session.user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="z-50 mt-2 w-72 rounded-2xl border border-slate-700 bg-slate-950 p-4 text-slate-100 shadow-2xl"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-11 w-11 border border-white/20">
+                      <AvatarImage src={session.user.image ?? undefined} alt={session.user.name ?? ui.account} />
+                      <AvatarFallback className="bg-slate-800 text-slate-100">
+                        {getUserInitials(session.user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-100">
+                        {session.user.name ?? ui.account}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">{session.user.email ?? ui.noEmail}</p>
+                      <p className="truncate text-[11px] text-cyan-300">
+                        {ui.role}: {session.user.isAdmin === "true" ? ui.admin : ui.operator}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
+                    <p className="mb-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">{ui.language}</p>
+                    <LanguageSwitcherCompact />
+                  </div>
+                  <Button
+                    onClick={handleSignOut}
+                    size="sm"
+                    className="w-full border border-red-500 bg-red-600 text-white hover:bg-red-500"
+                  >
+                    {ui.signOut}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        ) : null}
+
+        <div className="fixed inset-x-0 bottom-0 z-40 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
+          <div className="rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl">
+            <div className="flex w-full items-center justify-between px-2 py-3 sm:px-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-11 w-11 border-slate-700 bg-slate-900 px-0 text-slate-100 hover:bg-slate-800"
+                onClick={handleMobileSearchOpen}
+                aria-label={ui.search}
+                title={ui.search}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-11 w-11 border-slate-700 bg-slate-900 px-0 text-slate-100 hover:bg-slate-800"
+                onClick={handleMobileHome}
+                aria-label={ui.home}
+                title={ui.home}
+              >
+                <House className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                className={cn(
+                  "h-11 w-11 px-0",
+                  isRouteDialogOpen
+                    ? "bg-blue-600 text-white hover:bg-blue-500"
+                    : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                )}
+                onClick={handleRouteAction}
+                aria-label={ui.route}
+                title={ui.route}
+              >
+                <Route className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                className="h-11 w-11 bg-blue-600 px-0 text-white hover:bg-blue-500"
+                onClick={() => setIsAnalyticsDialogOpen(true)}
+                aria-label={ui.historicalTrends}
+                title={ui.historicalTrends}
+              >
+                <TrendingUp className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
+
+        <Dialog open={isMobileSearchDialogOpen} onOpenChange={setIsMobileSearchDialogOpen}>
+          <DialogContent className="w-[calc(100vw-1.5rem)] max-w-lg border-slate-700 bg-slate-950 text-slate-100">
+            <DialogHeader>
+              <DialogTitle className="font-mono text-base">{ui.search}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{ui.sensorId}</label>
+                <Select value={selectedSensor} onValueChange={setSelectedSensor}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={ui.allSensors} />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="all">{ui.allSensors}</SelectItem>
+                    {filterOptions.sensors.map((sensor) => (
+                      <SelectItem key={sensor} value={sensor}>
+                        {sensor}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{ui.location}</label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={ui.allLocations} />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="all">{ui.allLocations}</SelectItem>
+                    {filterOptions.locations.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        {ui.noLocationsAvailable}
+                      </SelectItem>
+                    ) : (
+                      filterOptions.locations.map((location) => (
+                        <SelectItem key={location} value={location}>
+                          {location}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{ui.transportType}</label>
+                <Select value={selectedTransportType} onValueChange={setSelectedTransportType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={ui.allTypes} />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="all">{ui.allTypes}</SelectItem>
+                    {filterOptions.transportTypes.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        {ui.noTransportTypesAvailable}
+                      </SelectItem>
+                    ) : (
+                      filterOptions.transportTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ui.startDate}</label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ui.endDate}</label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedSensor("all");
+                    setSelectedLocation("all");
+                    setSelectedTransportType("all");
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                >
+                  {ui.reset}
+                </Button>
+                <Badge variant="outline" className="uppercase tracking-wide text-[11px]">
+                  <span className="mr-1 font-mono">{filteredReadings.length}</span> {ui.activePoints}
+                </Badge>
+              </div>
+              <Button className="w-full" onClick={() => setIsMobileSearchDialogOpen(false)}>
+                {ui.close}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isAnalyticsDialogOpen} onOpenChange={setIsAnalyticsDialogOpen}>
+          <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1rem)] flex-col overflow-hidden border-slate-700 bg-slate-950 p-0 sm:max-w-3xl">
+            <DialogHeader className="shrink-0 border-b border-border/60 px-5 py-4">
+              <DialogTitle className="font-mono text-lg">{ui.historicalTrends}</DialogTitle>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{analyticsContent}</div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRouteDialogOpen} onOpenChange={setIsRouteDialogOpen}>
+          <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md border-slate-700 bg-slate-950 text-slate-100">
+            <DialogHeader>
+              <DialogTitle className="font-mono text-base">{ui.route}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-slate-300">{ui.routeComingSoon}</p>
+            <Button onClick={() => setIsRouteDialogOpen(false)}>{ui.close}</Button>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -805,6 +1175,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   return (
     <div className="relative isolate min-h-screen">
       <DashboardMapPanel
+        key={`desktop-map-${desktopMapKey}`}
         readings={filteredReadings}
         emptyMapText={dict.noGeocodedData}
         recentActivity={activityFeed}
@@ -814,145 +1185,67 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         backgroundMode
         showFeedOverlay={false}
         mobileMode={false}
+        showLegend={false}
+        showLanguageToggle
+        useUserLocation={isDesktopLocationActive}
+        showUserStatus
       />
 
-      <section id="map-view" aria-hidden className="h-0 scroll-mt-28" />
-      <section id="particulate-metrics" aria-hidden className="h-0 scroll-mt-28" />
-      <section id="reports" aria-hidden className="h-0 scroll-mt-28" />
+      <Button
+        size="sm"
+        className={cn(
+          "fixed right-4 top-1/2 z-50 hidden h-11 w-11 -translate-y-1/2 px-0 lg:inline-flex",
+          isDesktopLocationActive
+            ? "bg-blue-600 text-white hover:bg-blue-500"
+            : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+        )}
+        onClick={handleDesktopLocationToggle}
+        aria-label={ui.locate}
+        title={ui.locate}
+      >
+        <MapPin className="h-4 w-4" />
+      </Button>
 
-      <div className="fixed bottom-6 left-4 top-20 z-20 hidden lg:block">
-        <div className="flex h-full w-[360px] flex-col gap-3 rounded-2xl border border-white/10 bg-slate-950/75 p-3 shadow-2xl backdrop-blur-2xl">
-          <div className="mt-1 min-h-0 min-w-0 flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
-            <div className="rounded-lg border border-white/10 bg-slate-900/55 px-3 py-2.5">
-              <p className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <Activity className="h-4 w-4 text-cyan-300" />
-                {ui.controlPanel}
-              </p>
-            </div>
+      <div className="fixed bottom-6 right-6 z-50 hidden flex-col gap-3 lg:flex">
+        <Button
+          onClick={handleDesktopExportReport}
+          disabled={filteredReadings.length === 0 || isExportingReport}
+          className="h-11 border border-blue-500/60 bg-blue-600 px-4 text-white shadow-lg hover:bg-blue-500"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {isExportingReport ? ui.exporting : "Download Report"}
+        </Button>
+
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
-              size="sm"
-              variant="outline"
-              className="justify-start gap-2 whitespace-nowrap border-white/15 bg-slate-900/55 text-sm font-semibold tracking-wide text-slate-100 hover:bg-slate-800/80"
+              variant="secondary"
+              className="h-11 justify-start gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 text-slate-100 shadow-lg hover:bg-slate-800"
             >
-              <Wind className="h-4 w-4 text-cyan-300" />
-              {ui.airComposition}
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/80" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+              </span>
+              <Activity className="h-4 w-4" />
+              <span className="text-sm font-semibold">Recent Readings</span>
             </Button>
-            {leadingStatItems.map((stat) => (
-              <div
-                key={`desktop-bar-${stat.label}`}
-                className="rounded-md border border-white/10 bg-slate-900/50 px-3 py-2"
-              >
-                <span className="text-xs uppercase tracking-wide text-slate-400">
-                  {stat.label}
-                </span>
-                <p className="font-mono text-base font-semibold text-slate-100">{stat.value}</p>
-              </div>
-            ))}
-            <div className="my-1 flex justify-center">
-              {renderFilterPopover(desktopFiltersOpen, setDesktopFiltersOpen)}
-            </div>
-            {trailingStatItems.map((stat) => (
-              <div
-                key={`desktop-bar-trailing-${stat.label}`}
-                className="rounded-md border border-white/10 bg-slate-900/50 px-3 py-2"
-              >
-                <span className="text-xs uppercase tracking-wide text-slate-400">
-                  {stat.label}
-                </span>
-                <p className="font-mono text-base font-semibold text-slate-100">{stat.value}</p>
-              </div>
-            ))}
-            <div className="rounded-xl border border-white/10 bg-slate-900/55 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-cyan-300" />
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300">
-                  {nearbyText.title}
-                </p>
-              </div>
-
-              {isNearbyLoading ? (
-                <p className="text-xs text-slate-300">{nearbyText.locating}</p>
-              ) : null}
-
-              {!isNearbyLoading && hasNearbyError ? (
-                <p className="text-xs text-slate-300">{nearbyText.error}</p>
-              ) : null}
-
-              {!isNearbyLoading && !hasNearbyError && nearbyDevices.length === 0 ? (
-                <p className="text-xs text-slate-300">{nearbyText.empty}</p>
-              ) : null}
-
-              {!isNearbyLoading && !hasNearbyError && nearbyDevices.length > 0 ? (
-                <div className="space-y-2">
-                  {nearbyDevices.map((device) => (
-                    <div
-                      key={`desktop-nearby-${device.id}`}
-                      className="flex items-center justify-between gap-2 rounded-md border border-white/10 bg-slate-950/45 px-2.5 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-100">{device.name}</p>
-                        <p className="font-mono text-xs text-slate-300">
-                          {device.distanceKm.toFixed(1)} {nearbyText.kmAway}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={cn("capitalize", DEVICE_STATUS_CLASS[device.status])}
-                      >
-                        {device.status === "online"
-                          ? nearbyText.online
-                          : device.status === "idle"
-                            ? nearbyText.idle
-                            : nearbyText.offline}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="justify-start gap-2 whitespace-nowrap border-white/15 bg-slate-900/55 text-sm font-semibold tracking-wide text-slate-100 hover:bg-slate-800/80"
-                onClick={() => setIsAnalyticsDialogOpen(true)}
-              >
-                <TrendingUp className="h-4 w-4 text-cyan-300" />
-                {ui.openTrends}
-              </Button>
-            </div>
-            <div className="my-1 h-px bg-slate-700/70" />
-            <div className="rounded-xl border border-white/10 bg-slate-900/55 p-3">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 border border-slate-600">
-                  <AvatarImage src={session?.user?.image ?? undefined} alt={session?.user?.name ?? ui.account} />
-                  <AvatarFallback className="bg-slate-800 text-slate-100">
-                    {getUserInitials(session?.user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-100">{session?.user?.name ?? ui.account}</p>
-                  <p className="truncate text-xs text-slate-400">{session?.user?.email ?? ui.noEmail}</p>
-                  <p className="truncate text-[11px] text-cyan-300">
-                    {ui.role}: {session?.user?.isAdmin === "true" ? ui.admin : ui.operator}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleSignOut}
-                size="sm"
-                className="mt-3 w-full border border-red-400/45 bg-red-600/90 text-white hover:bg-red-500"
-              >
-                {ui.signOut}
-              </Button>
-            </div>
-          </div>
-        </div>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="end" className="z-50 w-[340px] p-0">
+            <CompactActivityFeed
+              title={dict.recentIotData}
+              emptyText={dict.noRecentActivity}
+              items={activityFeed}
+              className="rounded-xl border-slate-700"
+            />
+          </PopoverContent>
+        </Popover>
       </div>
+
+      <section id="map-view" aria-hidden className="h-0" />
 
       <div className="relative z-10 space-y-6 pb-24 lg:hidden">
         <div className="sticky top-16 z-20 -mx-1 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-2 rounded-xl border border-border/70 bg-background/75 p-2 shadow-xl backdrop-blur-lg">
+          <div className="flex min-w-max gap-2 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-xl">
             <Button
               size="sm"
               variant="secondary"
@@ -1037,7 +1330,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       </div>
 
       <Dialog open={isAnalyticsDialogOpen} onOpenChange={setIsAnalyticsDialogOpen}>
-        <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-2rem)] flex-col overflow-hidden border-border/70 bg-background/95 p-0 backdrop-blur-lg sm:max-w-3xl">
+        <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-2rem)] flex-col overflow-hidden border-slate-700 bg-slate-950 p-0 sm:max-w-3xl">
           <DialogHeader className="shrink-0 border-b border-border/60 px-5 py-4">
             <DialogTitle className="font-mono text-lg">{ui.historicalTrends}</DialogTitle>
           </DialogHeader>
@@ -1047,59 +1340,15 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         </DialogContent>
       </Dialog>
 
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2">
-        <Popover open={recentReadingsOpen} onOpenChange={setRecentReadingsOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="secondary"
-              className="flex items-center gap-3 rounded-full px-4 pr-5 shadow-lg backdrop-blur"
-            >
-              <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/80" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-              </span>
-              <Activity className="h-4 w-4" />
-              <span className="whitespace-nowrap text-sm font-semibold">{ui.recentReadings}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent side="top" align="end" className="z-50 w-[320px] p-0 sm:w-[360px]">
-            <div className="max-h-72 overflow-y-auto px-2 py-2">
-              {activityFeed.length === 0 ? (
-                <p className="px-2 py-6 text-center text-xs text-muted-foreground">{dict.noRecentActivity}</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {activityFeed.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-muted/60"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="relative flex h-2 w-2 items-center justify-center">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                        </span>
-                        <span className="truncate text-sm font-medium text-foreground">{item.sensorId}</span>
-                      </div>
-                      <span className="whitespace-nowrap text-xs text-muted-foreground">
-                        {formatRecentTimestamp(item.timestamp)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <Button
-          onClick={downloadPdf}
-          disabled={isExporting || filteredReadings.length === 0}
-          className="gap-2 rounded-full px-5 shadow-xl"
-        >
-          <Download className="h-4 w-4" />
-          {isExporting ? ui.preparingPdf : ui.downloadData}
-        </Button>
-      </div>
+      <Dialog open={isRouteDialogOpen} onOpenChange={setIsRouteDialogOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md border-slate-700 bg-slate-950 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-base">{ui.route}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-300">{ui.routeComingSoon}</p>
+          <Button onClick={() => setIsRouteDialogOpen(false)}>{ui.close}</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

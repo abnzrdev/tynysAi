@@ -14,8 +14,10 @@ type AirQualityMapProps = {
   heightClass?: string;
   className?: string;
   showLegend?: boolean;
+  showLanguageToggle?: boolean;
   useUserLocation?: boolean;
   showUserStatus?: boolean;
+  showUserStatusAsPopover?: boolean;
 };
 
 const AirQualityMap = dynamic<AirQualityMapProps>(
@@ -37,6 +39,12 @@ interface DashboardMapPanelProps {
   className?: string;
   showFeedOverlay?: boolean;
   mobileMode?: boolean;
+  minimalMode?: boolean;
+  showLegend?: boolean;
+  showLanguageToggle?: boolean;
+  useUserLocation?: boolean;
+  showUserStatus?: boolean;
+  showUserStatusAsPopover?: boolean;
 }
 
 export function DashboardMapPanel({
@@ -50,7 +58,17 @@ export function DashboardMapPanel({
   className,
   showFeedOverlay = true,
   mobileMode = false,
+  minimalMode = false,
+  showLegend = true,
+  showLanguageToggle,
+  useUserLocation,
+  showUserStatus,
+  showUserStatusAsPopover = false,
 }: DashboardMapPanelProps) {
+  const shouldShowLanguageToggle = showLanguageToggle ?? !mobileMode;
+  const shouldUseUserLocation = useUserLocation ?? mobileMode;
+  const shouldShowUserStatus = showUserStatus ?? mobileMode;
+
   if (backgroundMode) {
     return (
       <div className={cn("fixed inset-0 -z-10 overflow-hidden", className)}>
@@ -59,13 +77,33 @@ export function DashboardMapPanel({
           emptyStateText={emptyMapText}
           heightClass={mapHeightClass}
           className="h-full rounded-none border-0"
-          showLegend
-          useUserLocation={mobileMode}
-          showUserStatus={mobileMode}
+          showLegend={showLegend}
+          showLanguageToggle={shouldShowLanguageToggle}
+          useUserLocation={shouldUseUserLocation}
+          showUserStatus={shouldShowUserStatus}
+          showUserStatusAsPopover={showUserStatusAsPopover}
         />
         {showFeedOverlay ? (
           <LiveFeedOverlay title={feedTitle} emptyText={feedEmptyText} items={recentActivity} />
         ) : null}
+      </div>
+    );
+  }
+
+  if (minimalMode) {
+    return (
+      <div className={cn("relative", className)}>
+        <AirQualityMap
+          readings={readings}
+          emptyStateText={emptyMapText}
+          heightClass={mapHeightClass}
+          className="h-full rounded-none border-0"
+          showLegend={showLegend}
+          showLanguageToggle={shouldShowLanguageToggle}
+          useUserLocation={shouldUseUserLocation}
+          showUserStatus={shouldShowUserStatus}
+          showUserStatusAsPopover={showUserStatusAsPopover}
+        />
       </div>
     );
   }
@@ -86,6 +124,11 @@ export function DashboardMapPanel({
               emptyStateText={emptyMapText}
               heightClass={mapHeightClass}
               className="rounded-2xl"
+              showLegend={showLegend}
+              showLanguageToggle={shouldShowLanguageToggle}
+              useUserLocation={shouldUseUserLocation}
+              showUserStatus={shouldShowUserStatus}
+              showUserStatusAsPopover={showUserStatusAsPopover}
             />
           </div>
         </div>

@@ -18,12 +18,16 @@ const languageNames: Record<Locale, string> = {
   kz: 'Қазақша',
 };
 
+function getLocaleFromPathname(pathname: string): Locale {
+  const candidate = pathname.split('/')[1] as Locale | undefined;
+  return i18n.locales.includes(candidate as Locale) ? (candidate as Locale) : i18n.defaultLocale;
+}
+
 export function LanguageSwitcher({ iconOnly = false }: { iconOnly?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Extract current locale from pathname
-  const currentLocale = pathname.split('/')[1] as Locale;
+  const currentLocale = getLocaleFromPathname(pathname);
 
   const switchLocale = (newLocale: string) => {
     if (!pathname) return;
@@ -79,10 +83,10 @@ export function LanguageSwitcher({ iconOnly = false }: { iconOnly?: boolean }) {
 }
 
 // Simplified version for mobile/header
-export function LanguageSwitcherCompact() {
+export function LanguageSwitcherCompact({ minimal = false }: { minimal?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
-  const currentLocale = pathname.split('/')[1] as Locale;
+  const currentLocale = getLocaleFromPathname(pathname);
 
   const getNextLocale = () => {
     const currentIndex = i18n.locales.indexOf(currentLocale);
@@ -106,7 +110,11 @@ export function LanguageSwitcherCompact() {
       variant="outline"
       size="sm"
       onClick={switchToNextLocale}
-      className="flex items-center gap-2 hover:border-teal-600 dark:hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950"
+      className={
+        minimal
+          ? "h-10 rounded-full border border-slate-500/70 bg-transparent px-3 text-slate-100 hover:border-slate-400 hover:bg-transparent"
+          : "h-10 rounded-full border-slate-700 bg-slate-900 px-3 text-slate-100 hover:border-slate-600 hover:bg-slate-800"
+      }
     >
       <Globe className="h-4 w-4" />
       <span className="font-medium">{languageNames[currentLocale]}</span>

@@ -7,7 +7,10 @@ import L from "leaflet";
 import { usePathname } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DeviceDetailModal, type DeviceDetails } from "@/components/device-detail-modal";
+import { LanguageSwitcherCompact } from "@/components/language-switcher";
 
 export type MapReading = {
   location?: string | null;
@@ -50,6 +53,7 @@ const MAP_TEXT: Record<
     samples: string;
     nearbyAqi: string;
     locating: string;
+    enableLocation: string;
     kmAway: string;
     userLocation: string;
   }
@@ -66,6 +70,7 @@ const MAP_TEXT: Record<
     samples: "Samples",
     nearbyAqi: "Nearby AQI",
     locating: "Locating...",
+    enableLocation: "Enable location to view nearest AQI",
     kmAway: "km away",
     userLocation: "Your location",
   },
@@ -81,6 +86,7 @@ const MAP_TEXT: Record<
     samples: "Образцы",
     nearbyAqi: "AQI рядом",
     locating: "Определяем...",
+    enableLocation: "Включите геолокацию для отображения ближайшего AQI",
     kmAway: "км",
     userLocation: "Ваше местоположение",
   },
@@ -96,6 +102,7 @@ const MAP_TEXT: Record<
     samples: "Үлгілер",
     nearbyAqi: "Жақын AQI",
     locating: "Анықталуда...",
+    enableLocation: "Жақын AQI көру үшін геолокацияны қосыңыз",
     kmAway: "км",
     userLocation: "Сіздің орныңыз",
   },
@@ -247,17 +254,20 @@ export function AirQualityMap({
   emptyStateText,
   heightClass = "h-[420px]",
   className,
-  showLegend = true,
+  showLanguageToggle = false,
   useUserLocation = false,
   showUserStatus = false,
+  showUserStatusAsPopover = false,
 }: {
   readings: MapReading[];
   emptyStateText: string;
   heightClass?: string;
   className?: string;
   showLegend?: boolean;
+  showLanguageToggle?: boolean;
   useUserLocation?: boolean;
   showUserStatus?: boolean;
+  showUserStatusAsPopover?: boolean;
 }) {
   const pathname = usePathname();
   const pathnameLocale = (pathname?.split("/")[1] ?? "en") as "en" | "ru" | "kz";
@@ -280,7 +290,14 @@ export function AirQualityMap({
   }, [points]);
 
   useEffect(() => {
-    if (!useUserLocation || typeof window === "undefined" || !("geolocation" in navigator)) {
+    if (!useUserLocation) {
+      setUserLocation(null);
+      setIsLocating(false);
+      return;
+    }
+
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setIsLocating(false);
       return;
     }
 
@@ -298,6 +315,7 @@ export function AirQualityMap({
   }, [useUserLocation]);
 
   const nearestAqi = useMemo(() => {
+    if (!useUserLocation) return null;
     if (!userLocation || points.length === 0) return null;
 
     let best: AggregatedPoint | null = null;
@@ -321,7 +339,15 @@ export function AirQualityMap({
       label: text[category.key],
       distanceKm,
     };
-  }, [userLocation, points, text]);
+  }, [useUserLocation, userLocation, points, text]);
+
+  const statusValueText = !useUserLocation
+    ? text.enableLocation
+    : isLocating
+      ? text.locating
+      : nearestAqi
+        ? `${Math.round(nearestAqi.value)} · ${nearestAqi.label} · ${nearestAqi.distanceKm.toFixed(1)} ${text.kmAway}`
+        : "-";
 
   if (points.length === 0) {
     return (
@@ -345,30 +371,56 @@ export function AirQualityMap({
           className,
         )}
       >
-        {showLegend ? (
-          <div className="relative flex flex-wrap items-center gap-3 border-b border-slate-800/60 bg-background/80 px-3 py-2">
-            <LegendBar text={text} />
+        {showLanguageToggle ? (
+          <div className="absolute right-3 top-3 z-[500]">
+            <LanguageSwitcherCompact minimal />
           </div>
         ) : null}
 
         {showUserStatus ? (
-          <div className="absolute left-3 top-3 z-[500]">
-            <div className="rounded-lg border border-slate-700/80 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-lg">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400">{text.nearbyAqi}</p>
-              {isLocating ? (
-                <p className="mt-1 text-slate-200">{text.locating}</p>
-              ) : nearestAqi ? (
-                <p className="mt-1 font-semibold" style={{ color: nearestAqi.color }}>
-                  {Math.round(nearestAqi.value)} · {nearestAqi.label} · {nearestAqi.distanceKm.toFixed(1)} {text.kmAway}
-                </p>
-              ) : (
-                <p className="mt-1 text-slate-300">—</p>
-              )}
+          showUserStatusAsPopover ? (
+            <div className="absolute right-3 top-16 z-[500]">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-9 rounded-full border border-slate-700 bg-slate-900 px-3 text-slate-100 shadow-lg hover:bg-slate-800"
+                  >
+                    <span className="mr-2 relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    </span>
+                    {text.nearbyAqi}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" side="bottom" className="w-72 border-slate-700 bg-slate-950 text-slate-100">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400">{text.nearbyAqi}</p>
+                  <p
+                    className={cn("mt-1 text-xs", useUserLocation && nearestAqi ? "font-semibold" : "text-slate-300")}
+                    style={useUserLocation && nearestAqi ? { color: nearestAqi.color } : undefined}
+                  >
+                    {statusValueText}
+                  </p>
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
+          ) : (
+            <div className={cn("absolute right-3 z-[500]", showLanguageToggle ? "top-20" : "top-3")}>
+              <div className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 shadow-lg">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400">{text.nearbyAqi}</p>
+                <p
+                  className={cn("mt-1", useUserLocation && nearestAqi ? "font-semibold" : "text-slate-300")}
+                  style={useUserLocation && nearestAqi ? { color: nearestAqi.color } : undefined}
+                >
+                  {statusValueText}
+                </p>
+              </div>
+            </div>
+          )
         ) : null}
 
-        <div className={cn("relative flex-1 overflow-hidden", showLegend ? "rounded-b-lg" : "rounded-lg")}>
+        <div className="relative flex-1 overflow-hidden rounded-lg">
           <MapContainer
             center={center}
             zoom={6}
@@ -380,7 +432,7 @@ export function AirQualityMap({
             fadeAnimation={false}
             zoomAnimation={false}
             markerZoomAnimation={false}
-            className="h-full w-full bg-background"
+            className="h-full w-full bg-slate-950"
           >
             <TileLayer
               attribution="&copy; OpenStreetMap contributors"
@@ -431,7 +483,7 @@ export function AirQualityMap({
               );
             })}
 
-            {userLocation ? (
+            {useUserLocation && userLocation ? (
               <>
                 <Circle center={userLocation} radius={1000} pathOptions={{ color: "#38bdf8", weight: 1, fillOpacity: 0.08 }} />
                 <CircleMarker
@@ -452,22 +504,5 @@ export function AirQualityMap({
         details={selectedDevice}
       />
     </>
-  );
-}
-
-function LegendBar({ text }: { text: Record<AqiKey, string> & Record<string, string> }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      {AQI_BREAKPOINTS.map((level) => (
-        <div
-          key={level.key}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-1"
-        >
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: level.color }} aria-hidden />
-          <span className="font-medium text-foreground">{text[level.key]}</span>
-          <span className="text-muted-foreground">({level.range})</span>
-        </div>
-      ))}
-    </div>
   );
 }

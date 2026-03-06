@@ -1,49 +1,46 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { signOut } from "next-auth/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 import { i18n } from "@/lib/i18n/config";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  LayoutDashboard,
-  Users,
-  Activity,
-  Database,
+  ChevronLeft,
+  ChevronRight,
+  Home,
   LogOut,
-  Menu,
-  X,
-  BarChart3,
+  Route,
+  Search,
   TrendingUp,
-  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type DashboardSidebarProps = {
-  user: {
-    id: number;
-    name: string;
-    email: string;
-    isAdmin: string;
-  };
+  children: ReactNode;
 };
 
-export function DashboardSidebar({ user }: DashboardSidebarProps) {
+type SidebarCSSVars = CSSProperties & {
+  "--dashboard-sidebar-width"?: string;
+};
+
+type SidebarAction = "search" | "home" | "location" | "route" | "trends";
+
+const AQI_SIDEBAR_LABELS = [
+  { label: "Good", range: "0-50", className: "text-emerald-300" },
+  { label: "Moderate", range: "51-100", className: "text-lime-300" },
+  { label: "USG", range: "101-150", className: "text-yellow-300" },
+  { label: "Unhealthy", range: "151-200", className: "text-orange-300" },
+  { label: "Very Unhealthy", range: "201-300", className: "text-red-300" },
+  { label: "Hazardous", range: "300+", className: "text-fuchsia-300" },
+] as const;
+
+export function DashboardSidebar({ children }: DashboardSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  const getUserInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const isAdmin = user.isAdmin === "true";
+  const [activeAction, setActiveAction] = useState<SidebarAction>("home");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSignOut = () => {
     let callbackUrl = '/';
@@ -60,130 +57,147 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
     signOut({ callbackUrl });
   };
 
-  const navigationItems = [
+  const navigationItems: Array<{ id: SidebarAction; name: string; icon: React.ComponentType<{ className?: string }> }> = [
     {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      href: "#overview",
-      color: "text-blue-500",
-    },
-    ...(isAdmin
-      ? [
-          {
-            name: "Users",
-            icon: Users,
-            href: "#users",
-            color: "text-purple-500",
-          },
-          {
-            name: "Contributors",
-            icon: TrendingUp,
-            href: "#contributors",
-            color: "text-emerald-500",
-          },
-        ]
-      : []),
-    {
-      name: "Analytics",
-      icon: BarChart3,
-      href: "#analytics-section",
-      color: "text-amber-500",
+      id: "search",
+      name: "Search",
+      icon: Search,
     },
     {
-      name: "Sensors",
-      icon: Activity,
-      href: "#sensors",
-      color: "text-cyan-500",
+      id: "home",
+      name: "Home",
+      icon: Home,
     },
     {
-      name: "Data",
-      icon: Database,
-      href: "#data",
-      color: "text-pink-500",
+      id: "route",
+      name: "Route",
+      icon: Route,
     },
-  ];
+    {
+      id: "trends",
+      name: "Historical Trends",
+      icon: TrendingUp,
+    },
+  ] as const;
+
+  const emitAction = (action: SidebarAction) => {
+    setActiveAction(action);
+    window.dispatchEvent(new CustomEvent("dashboard:action", { detail: { action } }));
+  };
+
+  const emitSearch = (value: string) => {
+    setSearchTerm(value);
+    window.dispatchEvent(new CustomEvent("dashboard:search", { detail: { query: value } }));
+  };
+
+  const dashboardStyles = useMemo<SidebarCSSVars>(() => {
+    return {
+      "--dashboard-sidebar-width": isCollapsed ? "5rem" : "16rem",
+    };
+  }, [isCollapsed]);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-colors">
-      {/* Logo and Brand */}
-      <div className={cn("border-b border-border p-6", isCollapsed && "p-4")}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
-              <Shield className="h-6 w-6 text-primary-foreground" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-lg font-bold">Tynys</span>
-                <span className="text-sm text-muted-foreground">
-                  IoT Platform
-                </span>
-              </div>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden lg:flex"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* User Profile */}
-      <div className={cn("border-b border-border p-6", isCollapsed && "p-4")}>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 border-2 border-primary">
-            <AvatarImage
-              src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
-            />
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-primary-foreground">
-              {getUserInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-base font-semibold truncate">{user.name}</p>
-                {isAdmin && (
-                  <Badge variant="default" className="text-sm">
-                    Admin
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {user.email}
-              </p>
+    <div className="flex h-full flex-col bg-slate-950 text-slate-100 transition-colors">
+      <div className={cn("border-b border-slate-700 p-4", isCollapsed && "px-2")}>
+        <div className="hidden items-center justify-between gap-2 lg:flex">
+          {isCollapsed ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="mx-auto h-10 w-10 rounded-xl border border-slate-700 bg-slate-900 p-1.5 text-slate-100 hover:bg-slate-800"
+              onClick={() => setIsCollapsed(false)}
+              aria-label="Expand sidebar"
+            >
+              <Image
+                src="/tynys-logo.png"
+                alt="TynysAi"
+                width={24}
+                height={24}
+                className="h-6 w-6 object-contain"
+                priority
+              />
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Image
+                src="/tynys-logo.png"
+                alt="TynysAi"
+                width={26}
+                height={26}
+                className="h-6 w-6 object-contain"
+                priority
+              />
+              <span className="font-mono text-sm font-semibold tracking-wide text-slate-100">
+                tynysAi
+              </span>
             </div>
           )}
         </div>
       </div>
 
+      {!isCollapsed ? (
+        <div className="border-b border-slate-700 px-4 py-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => emitSearch(event.target.value)}
+              aria-label="Search sensors"
+              placeholder="Search"
+              className="h-10 border-slate-700 bg-slate-900 pl-9 text-sm text-slate-100 placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+      ) : null}
+
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
         {navigationItems.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
+          <button
+            type="button"
+            key={item.id}
+            onClick={() => emitAction(item.id)}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold transition-colors hover:bg-accent hover:text-accent-foreground text-[hsl(var(--foreground))]",
-              isCollapsed && "justify-center"
+              "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-base font-semibold transition-colors",
+              activeAction === item.id
+                ? "border-blue-500 bg-blue-600 text-white"
+                : "border-transparent text-slate-100 hover:border-blue-500 hover:bg-slate-900 hover:text-white",
+              isCollapsed && "justify-center px-2"
             )}
           >
-            <item.icon className={cn("h-5 w-5 flex-shrink-0", item.color)} />
+            <item.icon
+              className={cn(
+                "h-5 w-5 flex-shrink-0",
+                activeAction === item.id ? "text-white" : "text-slate-300"
+              )}
+            />
             {!isCollapsed && <span className="font-mono">{item.name}</span>}
-          </Link>
+          </button>
         ))}
+
+        {!isCollapsed ? (
+          <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              AQI Labels
+            </p>
+            <div className="space-y-1.5">
+              {AQI_SIDEBAR_LABELS.map((item) => (
+                <div key={item.label} className="flex items-center justify-between text-xs">
+                  <span className={cn("font-semibold", item.className)}>{item.label}</span>
+                  <span className="font-mono text-slate-300">{item.range}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </nav>
 
       {/* Bottom Actions */}
-      <div className="border-t border-border p-4 space-y-2">
+      <div className="border-t border-slate-700 p-4">
         <button
           onClick={handleSignOut}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold text-destructive transition-colors hover:bg-destructive/10 w-full cursor-pointer",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold text-red-400 transition-colors hover:bg-red-900/40",
             isCollapsed && "justify-center"
           )}
         >
@@ -195,48 +209,35 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
   );
 
   return (
-    <>
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? (
-          <X className="h-6 w-6" />
-        ) : (
-          <Menu className="h-6 w-6" />
-        )}
-      </Button>
-
-      {/* Mobile Sidebar Overlay */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform border-r border-border bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-transform duration-300 lg:hidden",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        {sidebarContent}
-      </aside>
-
+    <div style={dashboardStyles}>
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 hidden transform border-r border-border bg-[hsl(var(--card))] text-[hsl(var(--foreground))] transition-all duration-300 lg:block",
+          "fixed inset-y-0 left-0 z-50 hidden transform border-r border-slate-700 bg-slate-950 text-slate-100 transition-all duration-300 lg:block",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
         {sidebarContent}
+
+        <Button
+          variant="secondary"
+          size="icon"
+          className="absolute -right-4 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900 text-slate-100 shadow-lg hover:bg-slate-800"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </aside>
-    </>
+
+      <main
+        className={cn(
+          "min-h-screen transition-[padding] duration-300",
+          isCollapsed ? "lg:pl-20" : "lg:pl-64"
+        )}
+      >
+        {children}
+      </main>
+    </div>
   );
 }
