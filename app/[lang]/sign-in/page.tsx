@@ -122,7 +122,7 @@ export default function SignInPage() {
 
   return (
     <AuthPageShell>
-      <Card className="w-full max-w-md border border-white/20 bg-background/60 text-foreground shadow-2xl backdrop-blur-md">
+      <Card className="w-full max-w-md border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
         <CardHeader className="space-y-3 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Image 
@@ -192,7 +192,7 @@ export default function SignInPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+              className="w-full bg-blue-600 text-white shadow-lg transition-colors duration-300 hover:bg-blue-500"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -208,7 +208,7 @@ export default function SignInPage() {
               )}
             </Button>
 
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border">
+            <div className="mt-6 rounded-lg border border-slate-700 bg-slate-900 p-4">
               <p className="text-sm text-center text-muted-foreground mb-3">
                 {t.newToTynys}
               </p>
@@ -216,7 +216,7 @@ export default function SignInPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-border hover:border-teal-500 dark:hover:border-teal-400 transition-all duration-300"
+                  className="w-full border-slate-700 bg-slate-900 text-slate-100 transition-colors duration-300 hover:border-slate-600 hover:bg-slate-800"
                 >
                   <span className="flex items-center gap-2">
                     {t.createAccount}
