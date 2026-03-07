@@ -175,6 +175,14 @@ jobs:
               "NEXTAUTH_URL=${NEXTAUTH_URL_VALUE}" \
               "RELEASE_TAG=${RELEASE_TAG}" > .env
 
+            echo "==> Writing .env.local for server-side scripts..."
+            umask 077
+            printf '%s\n' \
+              "DATABASE_URL=postgresql://admin:${POSTGRES_PASSWORD_VALUE}@tynys-postgres:5432/tynysdb" \
+              "DB_URL=postgresql://admin:${POSTGRES_PASSWORD_VALUE}@tynys-postgres:5432/tynysdb" \
+              "NEXTAUTH_SECRET=${NEXTAUTH_SECRET_VALUE}" \
+              "IOT_DEVICE_SECRET=${IOT_DEVICE_SECRET_VALUE}" > .env.local
+
             echo "==> Deploying release: $RELEASE_TAG"
 
             echo "==> Building Docker image..."
@@ -231,7 +239,15 @@ jobs:
               exit 1
             fi
 
-            echo "==> Skipping seed in automatic deploy (run manually when needed)"
+            echo "==> Running seed in app container..."
+            if ! docker compose -f docker-compose.prod.yml exec -T \
+              -e DATABASE_URL="postgresql://admin:${POSTGRES_PASSWORD_VALUE}@tynys-postgres:5432/tynysdb" \
+              -e DB_URL="postgresql://admin:${POSTGRES_PASSWORD_VALUE}@tynys-postgres:5432/tynysdb" \
+              app npm run seed; then
+              echo "Seed failed"
+              rollback
+              exit 1
+            fi
 
             echo "==> Health check (up to 120 seconds)..."
             for i in $(seq 1 24); do
