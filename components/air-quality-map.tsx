@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
 import L from "leaflet";
 import { usePathname } from "next/navigation";
@@ -53,6 +53,10 @@ const MAP_TEXT: Record<
     samples: string;
     nearbyAqi: string;
     locating: string;
+    routing: string;
+    routeUnavailable: string;
+    routeDistance: string;
+    destination: string;
     enableLocation: string;
     kmAway: string;
     userLocation: string;
@@ -70,6 +74,10 @@ const MAP_TEXT: Record<
     samples: "Samples",
     nearbyAqi: "Nearby AQI",
     locating: "Locating...",
+    routing: "Routing to selected destination...",
+    routeUnavailable: "Route unavailable right now",
+    routeDistance: "Route distance",
+    destination: "Selected destination",
     enableLocation: "Enable location to view nearest AQI",
     kmAway: "km away",
     userLocation: "Your location",
@@ -86,6 +94,10 @@ const MAP_TEXT: Record<
     samples: "Образцы",
     nearbyAqi: "AQI рядом",
     locating: "Определяем...",
+    routing: "Строим маршрут к выбранной точке...",
+    routeUnavailable: "Маршрут сейчас недоступен",
+    routeDistance: "Длина маршрута",
+    destination: "Выбранная точка",
     enableLocation: "Включите геолокацию для отображения ближайшего AQI",
     kmAway: "км",
     userLocation: "Ваше местоположение",
@@ -102,11 +114,35 @@ const MAP_TEXT: Record<
     samples: "Үлгілер",
     nearbyAqi: "Жақын AQI",
     locating: "Анықталуда...",
+    routing: "Таңдалған нүктеге маршрут құрылуда...",
+    routeUnavailable: "Маршрут қазір қолжетімсіз",
+    routeDistance: "Маршрут қашықтығы",
+    destination: "Таңдалған нүкте",
     enableLocation: "Жақын AQI көру үшін геолокацияны қосыңыз",
     kmAway: "км",
     userLocation: "Сіздің орныңыз",
   },
 };
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function haversineDistanceKm(from: LatLngTuple, to: LatLngTuple) {
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(to[0] - from[0]);
+  const dLng = toRadians(to[1] - from[1]);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(toRadians(from[0]))
+    * Math.cos(toRadians(to[0]))
+    * Math.sin(dLng / 2)
+    * Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+}
 
 function parseLocation(location?: string | null): LatLngTuple | null {
   if (!location) return null;
@@ -217,23 +253,78 @@ function createNumericIcon(value: number, color: string) {
   });
 }
 
+function createUserLocationIcon() {
+  return L.divIcon({
+    className: "user-location-icon",
+    html: `
+      <div style="position: relative; width: 28px; height: 28px;">
+        <span style="
+          position: absolute;
+          inset: 0;
+          border-radius: 9999px;
+          border: 2px solid rgba(59,130,246,0.85);
+          background: rgba(59,130,246,0.22);
+          animation: userPulse 1.5s ease-out infinite;
+        "></span>
+        <span style="
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 13px;
+          height: 13px;
+          border-radius: 9999px;
+          background: #3b82f6;
+          border: 2px solid #ffffff;
+          transform: translate(-50%, -50%);
+          box-shadow: 0 0 14px rgba(59,130,246,0.95);
+        "></span>
+      </div>
+      <style>
+        @keyframes userPulse {
+          0% { transform: scale(0.55); opacity: 0.95; }
+          70% { transform: scale(1.85); opacity: 0.15; }
+          100% { transform: scale(2.05); opacity: 0; }
+        }
+      </style>
+    `,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -15],
+  });
+}
+
+const USER_LOCATION_ICON = createUserLocationIcon();
+
 function FitToMarkers({
   points,
   userLocation,
   useUserLocation,
+  routeDestination,
+  routeGeometry,
 }: {
   points: AggregatedPoint[];
   userLocation: LatLngTuple | null;
   useUserLocation: boolean;
+  routeDestination: LatLngTuple | null;
+  routeGeometry: LatLngTuple[] | null;
 }) {
   const map = useMap();
 
   useEffect(() => {
     if (!map) return;
 
+    if (routeGeometry && routeGeometry.length > 1) {
+      const bounds = L.latLngBounds(routeGeometry);
+      map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+      return;
+    }
+
     const coords = points.map((p) => p.coords);
     if (useUserLocation && userLocation) {
       coords.push(userLocation);
+    }
+    if (routeDestination) {
+      coords.push(routeDestination);
     }
 
     if (coords.length === 0) return;
@@ -244,7 +335,7 @@ function FitToMarkers({
 
     const bounds = L.latLngBounds(coords);
     map.fitBounds(bounds, { padding: [24, 24], maxZoom: useUserLocation ? 13 : 12 });
-  }, [map, points, userLocation, useUserLocation]);
+  }, [map, points, routeDestination, routeGeometry, userLocation, useUserLocation]);
 
   return null;
 }
@@ -256,8 +347,10 @@ export function AirQualityMap({
   className,
   showLanguageToggle = false,
   useUserLocation = false,
+  recenterRequestId,
   showUserStatus = false,
   showUserStatusAsPopover = false,
+  routeDestination = null,
 }: {
   readings: MapReading[];
   emptyStateText: string;
@@ -266,8 +359,10 @@ export function AirQualityMap({
   showLegend?: boolean;
   showLanguageToggle?: boolean;
   useUserLocation?: boolean;
+  recenterRequestId?: number;
   showUserStatus?: boolean;
   showUserStatusAsPopover?: boolean;
+  routeDestination?: LatLngTuple | null;
 }) {
   const pathname = usePathname();
   const pathnameLocale = (pathname?.split("/")[1] ?? "en") as "en" | "ru" | "kz";
@@ -277,8 +372,22 @@ export function AirQualityMap({
   const points = useMemo(() => aggregatePoints(readings), [readings]);
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [routeGeometry, setRouteGeometry] = useState<LatLngTuple[] | null>(null);
+  const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<DeviceDetails | null>(null);
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
+  const routeRequestMetaRef = useRef<{
+    source: LatLngTuple | null;
+    destinationKey: string | null;
+    requestAt: number;
+  }>({
+    source: null,
+    destinationKey: null,
+    requestAt: 0,
+  });
+  const latestRouteRequestIdRef = useRef(0);
 
   const center = useMemo<LatLngTuple>(() => {
     if (points.length === 0) return DEFAULT_CENTER;
@@ -310,9 +419,138 @@ export function AirQualityMap({
       () => {
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
-  }, [useUserLocation]);
+  }, [recenterRequestId, useUserLocation]);
+
+  useEffect(() => {
+    if (!routeDestination || !useUserLocation || !userLocation) {
+      console.info("[RouteDebug] routeEffect:reset", {
+        hasRouteDestination: Boolean(routeDestination),
+        useUserLocation,
+        hasUserLocation: Boolean(userLocation),
+      });
+      setRouteGeometry(null);
+      setRouteDistanceKm(null);
+      setIsRouting(false);
+      setRouteError(null);
+      routeRequestMetaRef.current = {
+        source: null,
+        destinationKey: null,
+        requestAt: 0,
+      };
+      return;
+    }
+
+    const destinationKey = `${routeDestination[0].toFixed(6)},${routeDestination[1].toFixed(6)}`;
+    const last = routeRequestMetaRef.current;
+    const elapsedMs = Date.now() - last.requestAt;
+    const movedKm = last.source ? haversineDistanceKm(last.source, userLocation) : Number.POSITIVE_INFINITY;
+    const destinationChanged = destinationKey !== last.destinationKey;
+    const shouldFetch = destinationChanged || last.requestAt === 0 || (movedKm >= 0.04 && elapsedMs >= 7000);
+
+    console.info("[RouteDebug] routeEffect:evaluate", {
+      destinationKey,
+      destinationChanged,
+      elapsedMs,
+      movedKm,
+      shouldFetch,
+    });
+
+    if (!shouldFetch) {
+      return;
+    }
+
+    const requestId = latestRouteRequestIdRef.current + 1;
+    latestRouteRequestIdRef.current = requestId;
+
+    routeRequestMetaRef.current = {
+      source: userLocation,
+      destinationKey,
+      requestAt: Date.now(),
+    };
+
+    setIsRouting(true);
+    setRouteError(null);
+
+    console.info("[RouteDebug] routeFetch:start", {
+      source: { lat: userLocation[0], lng: userLocation[1] },
+      destination: { lat: routeDestination[0], lng: routeDestination[1] },
+    });
+
+    void fetch("/api/v1/route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        source: {
+          latitude: userLocation[0],
+          longitude: userLocation[1],
+        },
+        destination: {
+          latitude: routeDestination[0],
+          longitude: routeDestination[1],
+        },
+      }),
+    })
+      .then(async (response) => {
+        if (requestId !== latestRouteRequestIdRef.current) {
+          return;
+        }
+        console.info("[RouteDebug] routeFetch:status", { status: response.status });
+        if (!response.ok) {
+          const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+          console.error("[RouteDebug] routeFetch:api-error", { error: errorPayload?.error ?? "unknown" });
+          throw new Error(errorPayload?.error || "route-fetch-failed");
+        }
+        const payload = (await response.json()) as {
+          geometry: [number, number][];
+          distanceMeters: number;
+        };
+
+        console.info("[RouteDebug] routeFetch:payload", {
+          geometryPoints: payload.geometry?.length ?? 0,
+          distanceMeters: payload.distanceMeters,
+        });
+
+        if (!payload.geometry || payload.geometry.length < 2) {
+          throw new Error("invalid-route-geometry");
+        }
+
+        setRouteGeometry(payload.geometry.map((coords) => [coords[0], coords[1]]));
+        setRouteDistanceKm(payload.distanceMeters / 1000);
+        setRouteError(null);
+        console.info("[RouteDebug] routeFetch:draw-success");
+      })
+      .catch((error: unknown) => {
+        if (requestId !== latestRouteRequestIdRef.current) {
+          return;
+        }
+        // Fallback: still draw a direct line so the user can navigate visually when routing provider fails.
+        setRouteGeometry([userLocation, routeDestination]);
+        setRouteDistanceKm(haversineDistanceKm(userLocation, routeDestination));
+        setRouteError(text.routeUnavailable);
+        console.error("[RouteDebug] routeFetch:failed-using-fallback", {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      })
+      .finally(() => {
+        if (requestId !== latestRouteRequestIdRef.current) {
+          return;
+        }
+        setIsRouting(false);
+        console.info("[RouteDebug] routeFetch:finished");
+      });
+  }, [routeDestination, text.routeUnavailable, useUserLocation, userLocation]);
+
+  useEffect(() => {
+    if (!routeGeometry) return;
+    console.info("[RouteDebug] routeGeometry:update", {
+      points: routeGeometry.length,
+      first: routeGeometry[0],
+      last: routeGeometry[routeGeometry.length - 1],
+    });
+  }, [routeGeometry]);
 
   const nearestAqi = useMemo(() => {
     if (!useUserLocation) return null;
@@ -345,6 +583,12 @@ export function AirQualityMap({
     ? text.enableLocation
     : isLocating
       ? text.locating
+      : routeDestination && routeError
+        ? routeError
+        : routeDestination && isRouting
+          ? text.routing
+          : routeDestination && routeDistanceKm !== null
+            ? `${text.routeDistance}: ${routeDistanceKm.toFixed(1)} ${text.kmAway}`
       : nearestAqi
         ? `${Math.round(nearestAqi.value)} · ${nearestAqi.label} · ${nearestAqi.distanceKm.toFixed(1)} ${text.kmAway}`
         : "-";
@@ -438,7 +682,30 @@ export function AirQualityMap({
               attribution="&copy; OpenStreetMap contributors"
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <FitToMarkers points={points} userLocation={userLocation} useUserLocation={useUserLocation} />
+            <FitToMarkers
+              points={points}
+              userLocation={userLocation}
+              useUserLocation={useUserLocation}
+              routeDestination={routeDestination}
+              routeGeometry={routeGeometry}
+            />
+
+            {routeGeometry && routeGeometry.length > 1 ? (
+              <Polyline
+                positions={routeGeometry}
+                pathOptions={{ color: "#22c55e", weight: 4, opacity: 0.9 }}
+              />
+            ) : null}
+
+            {routeDestination ? (
+              <CircleMarker
+                center={routeDestination}
+                radius={7}
+                pathOptions={{ color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.95, weight: 2 }}
+              >
+                <Popup>{text.destination}</Popup>
+              </CircleMarker>
+            ) : null}
 
             {points.map((point) => {
               const aqi = getAqiStyle(point.avgValue);
@@ -485,14 +752,9 @@ export function AirQualityMap({
 
             {useUserLocation && userLocation ? (
               <>
-                <Circle center={userLocation} radius={1000} pathOptions={{ color: "#38bdf8", weight: 1, fillOpacity: 0.08 }} />
-                <CircleMarker
-                  center={userLocation}
-                  radius={7}
-                  pathOptions={{ color: "#38bdf8", fillColor: "#38bdf8", fillOpacity: 1, weight: 2 }}
-                >
+                <Marker center={userLocation} position={userLocation} icon={USER_LOCATION_ICON}>
                   <Popup>{text.userLocation}</Popup>
-                </CircleMarker>
+                </Marker>
               </>
             ) : null}
           </MapContainer>

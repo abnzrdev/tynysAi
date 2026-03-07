@@ -112,8 +112,8 @@ export function LanguageSwitcherCompact({ minimal = false }: { minimal?: boolean
       onClick={switchToNextLocale}
       className={
         minimal
-          ? "h-10 rounded-full border border-slate-500/70 bg-transparent px-3 text-slate-100 hover:border-slate-400 hover:bg-transparent"
-          : "h-10 rounded-full border-slate-700 bg-slate-900 px-3 text-slate-100 hover:border-slate-600 hover:bg-slate-800"
+          ? "h-10 rounded-full border border-cyan-400/60 bg-cyan-500/15 px-3 text-cyan-100 hover:border-cyan-300 hover:bg-cyan-500/25"
+          : "h-10 rounded-full border border-cyan-500/50 bg-cyan-600/15 px-3 text-cyan-100 hover:border-cyan-400 hover:bg-cyan-600/25"
       }
     >
       <Globe className="h-4 w-4" />

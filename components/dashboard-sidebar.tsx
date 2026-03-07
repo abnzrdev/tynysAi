@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import {
   ChevronLeft,
   ChevronRight,
-  Home,
   LogOut,
   Route,
   Search,
@@ -38,8 +37,8 @@ const AQI_SIDEBAR_LABELS = [
 ] as const;
 
 export function DashboardSidebar({ children }: DashboardSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeAction, setActiveAction] = useState<SidebarAction>("home");
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [activeAction, setActiveAction] = useState<SidebarAction>("route");
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleSignOut = () => {
@@ -58,16 +57,6 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
   };
 
   const navigationItems: Array<{ id: SidebarAction; name: string; icon: React.ComponentType<{ className?: string }> }> = [
-    {
-      id: "search",
-      name: "Search",
-      icon: Search,
-    },
-    {
-      id: "home",
-      name: "Home",
-      icon: Home,
-    },
     {
       id: "route",
       name: "Route",
@@ -175,8 +164,12 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
           </button>
         ))}
 
+      </nav>
+
+      {/* Bottom Actions */}
+      <div className="border-t border-slate-700 p-4">
         {!isCollapsed ? (
-          <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3">
+          <div className="mb-4 rounded-lg border border-slate-700 bg-slate-900/70 p-3">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               AQI Labels
             </p>
@@ -190,10 +183,6 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
             </div>
           </div>
         ) : null}
-      </nav>
-
-      {/* Bottom Actions */}
-      <div className="border-t border-slate-700 p-4">
         <button
           onClick={handleSignOut}
           className={cn(

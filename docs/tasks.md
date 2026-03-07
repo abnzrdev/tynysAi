@@ -23,7 +23,7 @@ Tell the AI: "Complete the next unchecked task only, follow the spec in requirem
 
 - [ ] Integrate NLP model into PC web search bar (parse natural language queries)
 - [ ] Build scrollable map component on Phone (map expands on scroll)
-- [ ] Build "Route to Clean Air" feature — show route to nearest good AQI location
+- [x] Build "Route to Clean Air" feature — show route to nearest good AQI location
 - [ ] Add nearby air sensor markers on Phone map with AQI values
 
 ---

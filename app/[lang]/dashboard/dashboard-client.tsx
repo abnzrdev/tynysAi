@@ -11,6 +11,7 @@ import { SensorChart } from "@/components/sensor-chart";
 import { SensorDistribution, type SensorSlice } from "@/components/sensor-distribution";
 import { fetchNearbyDevices, type NearbyDevice } from "@/lib/device-api";
 import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
+import type { GoodAirOption, NearestGoodAirResponse } from "@/types/route";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ import {
   Download,
   Filter,
   LineChart,
-  MapPin,
+  Navigation,
   Microscope,
   Radio,
   Search,
@@ -38,7 +39,6 @@ import {
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 
 export type SensorReading = {
-  id: number;
   timestamp: string;
   sensorId: string;
   value: number;
@@ -88,6 +88,9 @@ type SectionHeaderProps = {
 type DashboardLocale = "en" | "ru" | "kz";
 type SidebarAction = "search" | "home" | "location" | "route" | "trends";
 
+const MOBILE_LOCATION_PREF_KEY = "dashboard.mobile.location.enabled";
+const DESKTOP_LOCATION_PREF_KEY = "dashboard.desktop.location.enabled";
+
 const DASHBOARD_UI_TEXT: Record<
   DashboardLocale,
   {
@@ -127,6 +130,13 @@ const DASHBOARD_UI_TEXT: Record<
     route: string;
     close: string;
     routeComingSoon: string;
+    routeLoading: string;
+    routeNoOptions: string;
+    routeLoadError: string;
+    routeRetry: string;
+    routeChooseGo: string;
+    routeDistance: string;
+    routeAqi: string;
   }
 > = {
   en: {
@@ -166,6 +176,13 @@ const DASHBOARD_UI_TEXT: Record<
     route: "Route",
     close: "Close",
     routeComingSoon: "Route to nearest clean-air zone is coming next.",
+    routeLoading: "Loading nearby clean-air options...",
+    routeNoOptions: "No nearby clean-air options found right now.",
+    routeLoadError: "Could not load route options. Please try again.",
+    routeRetry: "Retry",
+    routeChooseGo: "Choose & Go",
+    routeDistance: "Distance",
+    routeAqi: "AQI",
   },
   ru: {
     filters: "Фильтры",
@@ -204,6 +221,13 @@ const DASHBOARD_UI_TEXT: Record<
     route: "Маршрут",
     close: "Закрыть",
     routeComingSoon: "Маршрут до ближайшей зоны с чистым воздухом будет добавлен следующим шагом.",
+    routeLoading: "Загружаем ближайшие точки с чистым воздухом...",
+    routeNoOptions: "Сейчас рядом нет точек с хорошим AQI.",
+    routeLoadError: "Не удалось загрузить варианты маршрута. Повторите попытку.",
+    routeRetry: "Повторить",
+    routeChooseGo: "Выбрать и ехать",
+    routeDistance: "Расстояние",
+    routeAqi: "AQI",
   },
   kz: {
     filters: "Сүзгілер",
@@ -242,6 +266,13 @@ const DASHBOARD_UI_TEXT: Record<
     route: "Бағыт",
     close: "Жабу",
     routeComingSoon: "Ең жақын таза ауа аймағына бағыттау келесі қадамда қосылады.",
+    routeLoading: "Жақын таза ауа нүктелері жүктелуде...",
+    routeNoOptions: "Қазір жақын маңда таза ауа нүктелері табылмады.",
+    routeLoadError: "Бағыт нұсқаларын жүктеу мүмкін болмады. Қайталап көріңіз.",
+    routeRetry: "Қайталау",
+    routeChooseGo: "Таңдап бару",
+    routeDistance: "Қашықтық",
+    routeAqi: "AQI",
   },
 };
 
@@ -319,12 +350,20 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const [isMobileAccountOpen, setIsMobileAccountOpen] = useState(false);
   const [isMobileSearchDialogOpen, setIsMobileSearchDialogOpen] = useState(false);
   const [isRouteDialogOpen, setIsRouteDialogOpen] = useState(false);
+  const [routeOptions, setRouteOptions] = useState<GoodAirOption[]>([]);
+  const [isRouteOptionsLoading, setIsRouteOptionsLoading] = useState(false);
+  const [routeOptionsError, setRouteOptionsError] = useState<string | null>(null);
+  const [activeRouteDestination, setActiveRouteDestination] = useState<[number, number] | null>(null);
+  const [activeRouteOptionId, setActiveRouteOptionId] = useState<string | null>(null);
   const [isExportingReport, setIsExportingReport] = useState(false);
   const [mobileMapKey, setMobileMapKey] = useState(0);
   const [isMobileLocationActive, setIsMobileLocationActive] = useState(false);
   const [isMobileLocationPending, setIsMobileLocationPending] = useState(false);
   const [desktopMapKey, setDesktopMapKey] = useState(0);
   const [isDesktopLocationActive, setIsDesktopLocationActive] = useState(false);
+  const [desktopRecenterRequestId, setDesktopRecenterRequestId] = useState(0);
+  const [mobileRecenterRequestId, setMobileRecenterRequestId] = useState(0);
+  const [isLocationPrefHydrated, setIsLocationPrefHydrated] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [nearbyDevices, setNearbyDevices] = useState<NearbyDevice[]>([]);
   const [isNearbyLoading, setIsNearbyLoading] = useState(false);
@@ -473,6 +512,25 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    try {
+      const mobilePref = window.localStorage.getItem(MOBILE_LOCATION_PREF_KEY) === "1";
+      const desktopPref = window.localStorage.getItem(DESKTOP_LOCATION_PREF_KEY) === "1";
+
+      if (mobilePref) {
+        setIsMobileLocationActive(true);
+        setMobileRecenterRequestId((current) => current + 1);
+      }
+
+      if (desktopPref) {
+        setIsDesktopLocationActive(true);
+        setDesktopRecenterRequestId((current) => current + 1);
+      }
+    } catch {
+      // Ignore storage access issues (private mode / restricted environments)
+    } finally {
+      setIsLocationPrefHydrated(true);
+    }
+
     const media = window.matchMedia("(max-width: 1023px)");
 
     const apply = () => {
@@ -483,6 +541,26 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isLocationPrefHydrated) return;
+
+    try {
+      window.localStorage.setItem(MOBILE_LOCATION_PREF_KEY, isMobileLocationActive ? "1" : "0");
+    } catch {
+      // Ignore storage write failures
+    }
+  }, [isLocationPrefHydrated, isMobileLocationActive]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isLocationPrefHydrated) return;
+
+    try {
+      window.localStorage.setItem(DESKTOP_LOCATION_PREF_KEY, isDesktopLocationActive ? "1" : "0");
+    } catch {
+      // Ignore storage write failures
+    }
+  }, [isDesktopLocationActive, isLocationPrefHydrated]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -549,18 +627,15 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   const handleMobileHome = () => {
     setMobileMapKey((current) => current + 1);
+    setIsMobileLocationActive(false);
+    setIsMobileLocationPending(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleMobileLocationToggle = () => {
-    if (isMobileLocationActive) {
-      setIsMobileLocationActive(false);
-      setIsMobileLocationPending(false);
-      return;
-    }
-
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       setIsMobileLocationActive(false);
+      setIsMobileLocationPending(false);
       return;
     }
 
@@ -568,19 +643,117 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     navigator.geolocation.getCurrentPosition(
       () => {
         setIsMobileLocationActive(true);
+        setMobileRecenterRequestId((current) => current + 1);
         setIsMobileLocationPending(false);
       },
       () => {
-        setIsMobileLocationActive(false);
         setIsMobileLocationPending(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
     );
   };
 
-  const handleRouteAction = () => {
+  const loadRouteOptions = useCallback(() => {
+    console.info("[RouteDebug] loadRouteOptions:start", { isMobileDevice });
+
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      console.error("[RouteDebug] loadRouteOptions:no-geolocation");
+      setRouteOptions([]);
+      setRouteOptionsError(ui.routeLoadError);
+      setIsRouteOptionsLoading(false);
+      return;
+    }
+
+    setIsRouteOptionsLoading(true);
+    setRouteOptionsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        console.info("[RouteDebug] loadRouteOptions:position", { lat, lng });
+
+        try {
+          const response = await fetch(`/api/v1/nearest-good-air?lat=${lat}&lng=${lng}`, {
+            method: "GET",
+            cache: "no-store",
+          });
+
+          console.info("[RouteDebug] loadRouteOptions:api-status", { status: response.status });
+
+          if (!response.ok) {
+            throw new Error("route-options-failed");
+          }
+
+          const payload = (await response.json()) as NearestGoodAirResponse;
+          const options = payload.options ?? [];
+
+          console.info("[RouteDebug] loadRouteOptions:success", {
+            count: options.length,
+            first: options[0]
+              ? {
+                  id: options[0].id,
+                  label: options[0].label,
+                  distanceKm: options[0].distanceKm,
+                }
+              : null,
+          });
+
+          setRouteOptions(options);
+          setRouteOptionsError(options.length > 0 ? null : (payload.message ?? ui.routeNoOptions));
+        } catch (error) {
+          console.error("Failed to load clean-air route options:", error);
+          console.error("[RouteDebug] loadRouteOptions:failed", {
+            message: error instanceof Error ? error.message : String(error),
+          });
+          setRouteOptions([]);
+          setRouteOptionsError(ui.routeLoadError);
+        } finally {
+          setIsRouteOptionsLoading(false);
+        }
+      },
+      (geoError) => {
+        console.error("[RouteDebug] loadRouteOptions:geo-error", {
+          code: geoError.code,
+          message: geoError.message,
+        });
+        setRouteOptions([]);
+        setRouteOptionsError(ui.routeLoadError);
+        setIsRouteOptionsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 },
+    );
+  }, [isMobileDevice, ui.routeLoadError, ui.routeNoOptions]);
+
+  const handleRouteAction = useCallback(() => {
+    console.info("[RouteDebug] handleRouteAction:open-dialog");
     setIsRouteDialogOpen(true);
-  };
+    loadRouteOptions();
+  }, [loadRouteOptions]);
+
+  const handleChooseRouteDestination = useCallback((option: GoodAirOption) => {
+    console.info("[RouteDebug] chooseDestination", {
+      id: option.id,
+      label: option.label,
+      latitude: option.latitude,
+      longitude: option.longitude,
+      distanceKm: option.distanceKm,
+      isMobileDevice,
+    });
+    setActiveRouteDestination([option.latitude, option.longitude]);
+    setActiveRouteOptionId(option.id);
+
+    if (isMobileDevice) {
+      setIsMobileLocationActive(true);
+      setIsMobileLocationPending(false);
+      setMobileRecenterRequestId((current) => current + 1);
+    } else {
+      setIsDesktopLocationActive(true);
+      setDesktopRecenterRequestId((current) => current + 1);
+    }
+
+    setIsRouteDialogOpen(false);
+  }, [isMobileDevice]);
 
   const handleDesktopHome = useCallback(() => {
     setDesktopMapKey((current) => current + 1);
@@ -588,12 +761,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const handleDesktopLocationToggle = useCallback(() => {
-    if (isDesktopLocationActive) {
-      setIsDesktopLocationActive(false);
-      return;
-    }
-
+  const handleDesktopRecenter = useCallback(() => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
       setIsDesktopLocationActive(false);
       return;
@@ -602,13 +770,14 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     navigator.geolocation.getCurrentPosition(
       () => {
         setIsDesktopLocationActive(true);
+        setDesktopRecenterRequestId((current) => current + 1);
       },
       () => {
         setIsDesktopLocationActive(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
     );
-  }, [isDesktopLocationActive]);
+  }, []);
 
   const handleDesktopExportReport = useCallback(async () => {
     if (!filteredReadings.length || isExportingReport) return;
@@ -649,11 +818,11 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         return;
       }
       if (action === "location") {
-        handleDesktopLocationToggle();
+        handleDesktopRecenter();
         return;
       }
       if (action === "route") {
-        setIsRouteDialogOpen(true);
+        handleRouteAction();
         return;
       }
       if (action === "trends") {
@@ -673,7 +842,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       window.removeEventListener("dashboard:action", onAction as EventListener);
       window.removeEventListener("dashboard:search", onSearch as EventListener);
     };
-  }, [handleDesktopHome, handleDesktopLocationToggle]);
+  }, [handleDesktopHome, handleDesktopRecenter, handleRouteAction]);
 
   const statNumbers = useMemo(() => {
     const values = filteredReadings.map((r) => r.value);
@@ -902,6 +1071,59 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     </div>
   );
 
+  const routeDialogBody = (
+    <div className="space-y-3">
+      {isRouteOptionsLoading ? (
+        <p className="text-sm text-slate-300">{ui.routeLoading}</p>
+      ) : null}
+
+      {!isRouteOptionsLoading && routeOptions.length === 0 && routeOptionsError ? (
+        <div className="space-y-3">
+          <p className="text-sm text-slate-300">{routeOptionsError}</p>
+          <Button variant="outline" onClick={loadRouteOptions}>
+            {ui.routeRetry}
+          </Button>
+        </div>
+      ) : null}
+
+      {!isRouteOptionsLoading && routeOptions.length === 0 && !routeOptionsError ? (
+        <p className="text-sm text-slate-300">{ui.routeNoOptions}</p>
+      ) : null}
+
+      {!isRouteOptionsLoading && routeOptions.length > 0 ? (
+        <div className="max-h-[52dvh] space-y-2 overflow-y-auto pr-1">
+          {routeOptions.map((option) => {
+            const isActive = activeRouteOptionId === option.id;
+            return (
+              <div
+                key={option.id}
+                className={cn(
+                  "rounded-xl border border-slate-700 bg-slate-900 p-3",
+                  isActive ? "border-blue-500/70" : undefined,
+                )}
+              >
+                <p className="truncate text-sm font-semibold text-slate-100">{option.label}</p>
+                <p className="mt-1 text-xs text-slate-300">
+                  {ui.routeDistance}: {option.distanceKm.toFixed(2)} {nearbyText.kmAway}
+                </p>
+                <p className="text-xs text-slate-300">
+                  {ui.routeAqi}: {Math.round(option.aqi)}
+                </p>
+                <Button className="mt-3 h-8 w-full" onClick={() => handleChooseRouteDestination(option)}>
+                  {ui.routeChooseGo}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <Button variant="ghost" onClick={() => setIsRouteDialogOpen(false)}>
+        {ui.close}
+      </Button>
+    </div>
+  );
+
   if (isMobileDevice) {
     return (
       <div className="relative isolate min-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100">
@@ -922,26 +1144,12 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           showUserStatus
           showUserStatusAsPopover
           showLanguageToggle={false}
+          recenterRequestId={mobileRecenterRequestId}
+          routeDestination={activeRouteDestination}
           className="fixed inset-0"
         />
 
         <div className="pointer-events-none fixed inset-0 z-20 bg-slate-950/10" />
-
-        <Button
-          size="sm"
-          className={cn(
-            "fixed right-3 top-1/2 z-40 h-11 w-11 -translate-y-1/2 px-0",
-            isMobileLocationActive
-              ? "bg-blue-600 text-white hover:bg-blue-500"
-              : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
-          )}
-          onClick={handleMobileLocationToggle}
-          disabled={isMobileLocationPending}
-          aria-label={isMobileLocationPending ? ui.locating : ui.locate}
-          title={isMobileLocationPending ? ui.locating : ui.locate}
-        >
-          <MapPin className={cn("h-4 w-4", isMobileLocationPending ? "animate-pulse" : undefined)} />
-        </Button>
 
         {session?.user ? (
           <div className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-40 flex items-center">
@@ -1026,7 +1234,22 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
                 size="sm"
                 className={cn(
                   "h-11 w-11 px-0",
-                  isRouteDialogOpen
+                  isMobileLocationActive
+                    ? "bg-red-600 text-white hover:bg-red-500"
+                    : "border border-red-700 bg-slate-900 text-red-200 hover:bg-slate-800"
+                )}
+                onClick={handleMobileLocationToggle}
+                disabled={isMobileLocationPending}
+                aria-label={isMobileLocationPending ? ui.locating : ui.locate}
+                title={isMobileLocationPending ? ui.locating : ui.locate}
+              >
+                <Navigation className={cn("h-4 w-4", isMobileLocationPending ? "animate-pulse" : undefined)} />
+              </Button>
+              <Button
+                size="sm"
+                className={cn(
+                  "h-11 w-11 px-0",
+                  isRouteDialogOpen || Boolean(activeRouteDestination)
                     ? "bg-blue-600 text-white hover:bg-blue-500"
                     : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
                 )}
@@ -1164,8 +1387,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
             <DialogHeader>
               <DialogTitle className="font-mono text-base">{ui.route}</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-slate-300">{ui.routeComingSoon}</p>
-            <Button onClick={() => setIsRouteDialogOpen(false)}>{ui.close}</Button>
+            {routeDialogBody}
           </DialogContent>
         </Dialog>
       </div>
@@ -1188,7 +1410,9 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         showLegend={false}
         showLanguageToggle
         useUserLocation={isDesktopLocationActive}
+        recenterRequestId={desktopRecenterRequestId}
         showUserStatus
+        routeDestination={activeRouteDestination}
       />
 
       <Button
@@ -1196,14 +1420,14 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         className={cn(
           "fixed right-4 top-1/2 z-50 hidden h-11 w-11 -translate-y-1/2 px-0 lg:inline-flex",
           isDesktopLocationActive
-            ? "bg-blue-600 text-white hover:bg-blue-500"
-            : "border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+            ? "bg-red-600 text-white hover:bg-red-500"
+            : "border border-red-700 bg-slate-900 text-red-200 hover:bg-slate-800"
         )}
-        onClick={handleDesktopLocationToggle}
+        onClick={handleDesktopRecenter}
         aria-label={ui.locate}
         title={ui.locate}
       >
-        <MapPin className="h-4 w-4" />
+        <Navigation className="h-4 w-4" />
       </Button>
 
       <div className="fixed bottom-6 right-6 z-50 hidden flex-col gap-3 lg:flex">
@@ -1345,8 +1569,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           <DialogHeader>
             <DialogTitle className="font-mono text-base">{ui.route}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-300">{ui.routeComingSoon}</p>
-          <Button onClick={() => setIsRouteDialogOpen(false)}>{ui.close}</Button>
+          {routeDialogBody}
         </DialogContent>
       </Dialog>
     </div>

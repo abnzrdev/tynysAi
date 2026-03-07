@@ -16,8 +16,10 @@ type AirQualityMapProps = {
   showLegend?: boolean;
   showLanguageToggle?: boolean;
   useUserLocation?: boolean;
+  recenterRequestId?: number;
   showUserStatus?: boolean;
   showUserStatusAsPopover?: boolean;
+  routeDestination?: [number, number] | null;
 };
 
 const AirQualityMap = dynamic<AirQualityMapProps>(
@@ -43,8 +45,10 @@ interface DashboardMapPanelProps {
   showLegend?: boolean;
   showLanguageToggle?: boolean;
   useUserLocation?: boolean;
+  recenterRequestId?: number;
   showUserStatus?: boolean;
   showUserStatusAsPopover?: boolean;
+  routeDestination?: [number, number] | null; // Added here for passthrough
 }
 
 export function DashboardMapPanel({
@@ -62,8 +66,10 @@ export function DashboardMapPanel({
   showLegend = true,
   showLanguageToggle,
   useUserLocation,
+  recenterRequestId,
   showUserStatus,
   showUserStatusAsPopover = false,
+  routeDestination = null, // Default value for passthrough
 }: DashboardMapPanelProps) {
   const shouldShowLanguageToggle = showLanguageToggle ?? !mobileMode;
   const shouldUseUserLocation = useUserLocation ?? mobileMode;
@@ -80,8 +86,10 @@ export function DashboardMapPanel({
           showLegend={showLegend}
           showLanguageToggle={shouldShowLanguageToggle}
           useUserLocation={shouldUseUserLocation}
+          recenterRequestId={recenterRequestId}
           showUserStatus={shouldShowUserStatus}
           showUserStatusAsPopover={showUserStatusAsPopover}
+          routeDestination={routeDestination} // Pass through here
         />
         {showFeedOverlay ? (
           <LiveFeedOverlay title={feedTitle} emptyText={feedEmptyText} items={recentActivity} />
@@ -101,8 +109,10 @@ export function DashboardMapPanel({
           showLegend={showLegend}
           showLanguageToggle={shouldShowLanguageToggle}
           useUserLocation={shouldUseUserLocation}
+          recenterRequestId={recenterRequestId}
           showUserStatus={shouldShowUserStatus}
           showUserStatusAsPopover={showUserStatusAsPopover}
+          routeDestination={routeDestination} // Pass through here
         />
       </div>
     );
@@ -127,8 +137,10 @@ export function DashboardMapPanel({
               showLegend={showLegend}
               showLanguageToggle={shouldShowLanguageToggle}
               useUserLocation={shouldUseUserLocation}
+              recenterRequestId={recenterRequestId}
               showUserStatus={shouldShowUserStatus}
               showUserStatusAsPopover={showUserStatusAsPopover}
+              routeDestination={routeDestination} // Pass through here
             />
           </div>
         </div>
