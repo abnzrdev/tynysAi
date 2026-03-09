@@ -88,3 +88,6 @@ QUICK_START.md
 /playwright/.cache/
 e2e/.auth/
 .aider*
+
+# Local assistant / Copilot instructions (should not be committed)
+.github/copilot-instructions.md
