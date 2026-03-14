@@ -66,6 +66,9 @@ Ingests sensor reading data from IoT devices.
 **readings object:**
 All fields are optional, but at least one should be provided.
 
+Current production recommendation (interim AQI workflow): send these five metrics on each reading:
+- `pm25`, `pm10`, `co2`, `temp`, `hum`
+
 - `pm1`, `pm25`, `pm10`: Particulate matter in μg/m³ (0-1000)
 - `co2`: Carbon dioxide in ppm (300-5000)
 - `co`: Carbon monoxide in ppm (0-100)
