@@ -7,6 +7,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export type DeviceDetailReading = {
   sensorId: string;
@@ -44,41 +52,59 @@ function formatTimestamp(timestamp?: string | null) {
 }
 
 function numberOrDash(value?: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(1) : "—";
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(1) : "-";
 }
 
-function SensorMatrix({ details }: { details: DeviceDetails }) {
+function sortByNewest(a: DeviceDetailReading, b: DeviceDetailReading) {
+  const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+  const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+  return bTime - aTime;
+}
+
+function getIntensityRowClass(value: number) {
+  if (!Number.isFinite(value)) return "bg-slate-950/40";
+  if (value <= 12) return "bg-emerald-500/10";
+  if (value <= 35.4) return "bg-lime-500/10";
+  if (value <= 55.4) return "bg-amber-500/10";
+  if (value <= 150.4) return "bg-orange-500/10";
+  if (value <= 250.4) return "bg-red-500/10";
+  return "bg-violet-500/10";
+}
+
+function LatestReadingsTable({ details }: { details: DeviceDetails }) {
+  const latestThree = [...details.readings].sort(sortByNewest).slice(0, 3);
+
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-semibold text-zinc-100">All sensor readings</h4>
-      <div className="overflow-x-auto rounded-xl border border-slate-700/70 bg-slate-950/40">
-        <div className="min-w-[760px]">
-          <div className="grid grid-cols-[1.6fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.9fr] border-b border-slate-700/70 px-3 py-2 text-[10px] uppercase tracking-[0.1em] text-slate-400">
-            <p>Device</p>
-            <p className="text-right">AQI</p>
-            <p className="text-right">PM2.5</p>
-            <p className="text-right">PM10</p>
-            <p className="text-right">CO₂</p>
-            <p className="text-right">Temp °C</p>
-            <p className="text-right">Humidity %</p>
-          </div>
-          <div className="divide-y divide-slate-800/70">
-            {details.readings.map((reading, idx) => (
-              <div
-                key={`matrix-${reading.sensorId}-${reading.timestamp ?? idx}`}
-                className="grid grid-cols-[1.6fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.9fr] px-3 py-2 text-xs text-slate-200"
+      <h4 className="text-sm font-semibold text-zinc-100">Latest 3 readings</h4>
+      <div className="rounded-xl border border-slate-700/70 bg-slate-950/40">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-slate-700/70">
+              <TableHead className="uppercase tracking-[0.08em] text-slate-400">Timestamp</TableHead>
+              <TableHead className="text-right uppercase tracking-[0.08em] text-slate-400">AQI</TableHead>
+              <TableHead className="text-right uppercase tracking-[0.08em] text-slate-400">PM2.5</TableHead>
+              <TableHead className="text-right uppercase tracking-[0.08em] text-slate-400">PM10</TableHead>
+              <TableHead className="text-right uppercase tracking-[0.08em] text-slate-400">CO2</TableHead>
+              <TableHead className="uppercase tracking-[0.08em] text-slate-400">Site/Device ID</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {latestThree.map((reading, idx) => (
+              <TableRow
+                key={`latest-${reading.sensorId}-${reading.timestamp ?? idx}`}
+                className={`border-slate-800/70 ${getIntensityRowClass(reading.value)}`}
               >
-                <p className="truncate pr-2 font-medium text-zinc-100">{reading.sensorId}</p>
-                <p className="text-right font-mono">{reading.value.toFixed(1)}</p>
-                <p className="text-right font-mono">{numberOrDash(reading.mainReadings?.pm25)}</p>
-                <p className="text-right font-mono">{numberOrDash(reading.mainReadings?.pm10)}</p>
-                <p className="text-right font-mono">{numberOrDash(reading.mainReadings?.co2)}</p>
-                <p className="text-right font-mono">{numberOrDash(reading.mainReadings?.temperatureC)}</p>
-                <p className="text-right font-mono">{numberOrDash(reading.mainReadings?.humidityPct)}</p>
-              </div>
+                <TableCell className="text-xs text-slate-200">{formatTimestamp(reading.timestamp)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{reading.value.toFixed(1)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.pm25)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.pm10)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.co2)}</TableCell>
+                <TableCell className="text-xs font-medium text-zinc-100">{reading.sensorId}</TableCell>
+              </TableRow>
             ))}
-          </div>
-        </div>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -94,9 +120,7 @@ export function DeviceDetailModal({ open, onOpenChange, details }: DeviceDetailM
       <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl">Device details</DialogTitle>
-          <DialogDescription>
-            Full data for the selected device marker, including latest sensor values and timestamps.
-          </DialogDescription>
+          <DialogDescription>Latest sensor data in a compact intensity table.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 rounded-xl border border-slate-700/70 bg-slate-950/50 p-4 sm:grid-cols-2">
@@ -122,51 +146,7 @@ export function DeviceDetailModal({ open, onOpenChange, details }: DeviceDetailM
           </div>
         </div>
 
-        <SensorMatrix details={details} />
-
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-zinc-100">Recent readings</h4>
-          <div className="space-y-2">
-            {details.readings.map((reading, idx) => (
-              <article
-                key={`${reading.sensorId}-${reading.timestamp ?? idx}`}
-                className="rounded-xl border border-slate-700/70 bg-slate-950/40 p-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-zinc-100">{reading.sensorId}</p>
-                  <p className="text-xs text-slate-300">{formatTimestamp(reading.timestamp)}</p>
-                </div>
-
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">AQI</p>
-                    <p className="font-mono text-sm text-zinc-100">{reading.value.toFixed(1)}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">PM2.5</p>
-                    <p className="font-mono text-sm text-zinc-100">{numberOrDash(reading.mainReadings?.pm25)}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">PM10</p>
-                    <p className="font-mono text-sm text-zinc-100">{numberOrDash(reading.mainReadings?.pm10)}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">CO₂</p>
-                    <p className="font-mono text-sm text-zinc-100">{numberOrDash(reading.mainReadings?.co2)}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">Temp (°C)</p>
-                    <p className="font-mono text-sm text-zinc-100">{numberOrDash(reading.mainReadings?.temperatureC)}</p>
-                  </div>
-                  <div className="rounded-md border border-slate-700/60 bg-slate-900/60 px-2 py-1.5">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400">Humidity (%)</p>
-                    <p className="font-mono text-sm text-zinc-100">{numberOrDash(reading.mainReadings?.humidityPct)}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
+        <LatestReadingsTable details={details} />
       </DialogContent>
     </Dialog>
   );
