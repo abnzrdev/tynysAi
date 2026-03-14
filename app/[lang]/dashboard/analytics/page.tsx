@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/lib/auth";
-import { getUserByEmail, getRecentSensorReadings } from "@/lib/data-access";
+import { getUserByEmail, getRecentPublicSensorReadings } from "@/lib/data-access";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
 
@@ -57,9 +57,9 @@ export default async function AnalyticsPage({
     );
   }
 
-  let sensorReadings: Awaited<ReturnType<typeof getRecentSensorReadings>> = [];
+  let sensorReadings: Awaited<ReturnType<typeof getRecentPublicSensorReadings>> = [];
   try {
-    sensorReadings = await getRecentSensorReadings(user.id, 1000);
+    sensorReadings = await getRecentPublicSensorReadings(1000);
   } catch (error) {
     console.error("Failed to fetch sensor readings for analytics:", error);
     sensorReadings = [];

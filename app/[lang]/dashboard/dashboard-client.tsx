@@ -1,12 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { DashboardMapPanel } from "./map-panel-client";
 import { NearbyDevicesPanel } from "@/components/nearby-devices-panel";
 import { LanguageSwitcherCompact } from "@/components/language-switcher";
-import { SensorChart } from "@/components/sensor-chart";
 import { fetchNearbyDevices, type NearbyDevice } from "@/lib/device-api";
 import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
 import type { GoodAirOption, NearestGoodAirResponse } from "@/types/route";
@@ -34,6 +34,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
+
+const SensorChart = dynamic(
+  () => import("@/components/sensor-chart").then((mod) => mod.SensorChart),
+  {
+    ssr: false,
+    loading: () => <div className="h-[280px] w-full animate-pulse rounded-xl bg-slate-900/60" />,
+  },
+);
 
 export type SensorReading = {
   id?: number | string;
@@ -341,6 +349,7 @@ function SectionHeader({ id, icon: Icon, title, className }: SectionHeaderProps)
 
 export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [selectedSensor, setSelectedSensor] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedTransportType, setSelectedTransportType] = useState<string>("all");
@@ -366,8 +375,12 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const [desktopRecenterRequestId, setDesktopRecenterRequestId] = useState(0);
   const [mobileRecenterRequestId, setMobileRecenterRequestId] = useState(0);
   const [isLocationPrefHydrated, setIsLocationPrefHydrated] = useState(false);
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
   const [nearbyDevices, setNearbyDevices] = useState<NearbyDevice[]>([]);
+  const [nearbyCoords, setNearbyCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isNearbyLoading, setIsNearbyLoading] = useState(false);
   const [hasNearbyError, setHasNearbyError] = useState(false);
   const { data: session } = useSession();
@@ -542,6 +555,13 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (isMobileDevice) {
+      setIsNearbyLoading(false);
+      setHasNearbyError(false);
+      setNearbyCoords(null);
+      setNearbyDevices([]);
+      return;
+    }
 
     if (!("geolocation" in navigator)) {
       setHasNearbyError(true);
@@ -557,14 +577,13 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         if (!isActive) return;
 
         try {
-          const devices = await fetchNearbyDevices(
-            {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            },
-            6,
-          );
+          const coords = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          };
+          const devices = await fetchNearbyDevices(coords, 6);
           if (!isActive) return;
+          setNearbyCoords(coords);
           setNearbyDevices(devices);
           setHasNearbyError(false);
         } catch (error) {
@@ -581,6 +600,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       () => {
         if (!isActive) return;
         setHasNearbyError(true);
+        setNearbyCoords(null);
         setNearbyDevices([]);
         setIsNearbyLoading(false);
       },
@@ -591,6 +611,55 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       isActive = false;
     };
   }, [isMobileDevice]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (isMobileDevice) return;
+
+    const pollMs = 5000;
+    let isActive = true;
+
+    const runPoll = async () => {
+      if (!isActive || document.visibilityState !== "visible") {
+        return;
+      }
+
+      router.refresh();
+
+      if (!nearbyCoords) {
+        return;
+      }
+
+      try {
+        const devices = await fetchNearbyDevices(nearbyCoords, 6);
+        if (!isActive) return;
+        setNearbyDevices(devices);
+        setHasNearbyError(false);
+      } catch (error) {
+        if (!isActive) return;
+        console.error("Failed to refresh nearby devices:", error);
+        setHasNearbyError(true);
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void runPoll();
+    }, pollMs);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void runPoll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [isMobileDevice, nearbyCoords, router]);
 
   const handleMobileSearchOpen = () => {
     setIsMobileSearchDialogOpen(true);

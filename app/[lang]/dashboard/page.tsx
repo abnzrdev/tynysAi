@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getUserByEmail, getRecentSensorReadings } from "@/lib/data-access";
+import { getUserByEmail, getRecentPublicSensorReadings } from "@/lib/data-access";
 import { getSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { type Locale } from "@/lib/i18n/config";
@@ -63,9 +63,9 @@ export default async function DashboardPage({
   }
 
   // Fetch sensor readings with error handling
-  let sensorReadings: Awaited<ReturnType<typeof getRecentSensorReadings>> = [];
+  let sensorReadings: Awaited<ReturnType<typeof getRecentPublicSensorReadings>> = [];
   try {
-    sensorReadings = await getRecentSensorReadings(user.id, 500);
+    sensorReadings = await getRecentPublicSensorReadings(500);
   } catch (error) {
     console.error("Failed to fetch sensor readings:", error);
     // Return empty array to prevent page crash, dashboard will show empty state

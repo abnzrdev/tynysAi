@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +16,10 @@ import {
   AIR_QUALITY_BENCHMARKS_SUBTITLE,
   AIR_QUALITY_BENCHMARKS_TITLE,
 } from "@/lib/air-quality-benchmarks";
+
+type LiveSensorApiResponse = {
+  readings?: MapReading[];
+};
 
 type Dictionary = {
   nav: Record<string, string>;
@@ -61,17 +65,6 @@ type Dictionary = {
   [key: string]: Record<string, string> | string | undefined;
 };
 
-const almatyReadings: MapReading[] = [
-  { location: "43.2389,76.8897", value: 16, timestamp: "2026-02-27T08:00:00.000Z", sensorId: "Metro M1 - Abay", mainReadings: { pm25: 14.2, pm10: 20.4, co2: 512, temperatureC: 21.8, humidityPct: 43.1 } },
-  { location: "43.2473,76.9285", value: 38, timestamp: "2026-02-27T08:03:00.000Z", sensorId: "Bus BRT-201 - Dostyk", mainReadings: { pm25: 33.6, pm10: 46.5, co2: 688, temperatureC: 24.1, humidityPct: 37.8 } },
-  { location: "43.2590,76.9018", value: 29, timestamp: "2026-02-27T08:07:00.000Z", sensorId: "Trolleybus T4 - Satpayev", mainReadings: { pm25: 26.1, pm10: 35.9, co2: 614, temperatureC: 22.9, humidityPct: 40.5 } },
-  { location: "43.2220,76.8512", value: 48, timestamp: "2026-02-27T08:12:00.000Z", sensorId: "Bus 32 - Al-Farabi", mainReadings: { pm25: 45.3, pm10: 57.4, co2: 742, temperatureC: 25.6, humidityPct: 35.2 } },
-  { location: "43.2165,76.9380", value: 56, timestamp: "2026-02-27T08:16:00.000Z", sensorId: "Metro M1 - Raiymbek Batyr", mainReadings: { pm25: 52.9, pm10: 64.2, co2: 791, temperatureC: 23.7, humidityPct: 38.1 } },
-  { location: "43.2744,76.9441", value: 34, timestamp: "2026-02-27T08:20:00.000Z", sensorId: "Trolleybus T7 - Zhibek Zholy", mainReadings: { pm25: 31.4, pm10: 40.3, co2: 656, temperatureC: 23.3, humidityPct: 39.6 } },
-  { location: "43.2005,76.9057", value: 22, timestamp: "2026-02-27T08:24:00.000Z", sensorId: "Bus 45 - Auezov District", mainReadings: { pm25: 18.8, pm10: 27.1, co2: 548, temperatureC: 22.4, humidityPct: 42.7 } },
-  { location: "43.2917,76.8594", value: 63, timestamp: "2026-02-27T08:29:00.000Z", sensorId: "Bus 65 - Sairan", mainReadings: { pm25: 58.5, pm10: 71.8, co2: 824, temperatureC: 26.1, humidityPct: 34.4 } },
-];
-
 const contributors = [
   { group: "Done by", name: "Farabi AGI Center", note: "Farabi AGI Center" },
   { group: "Done by", name: "Farabi AGI Center", note: "Farabi AGI Center" },
@@ -104,11 +97,92 @@ export function HomePage({
 }) {
   const [selectedDevice, setSelectedDevice] = useState<DeviceDetails | null>(null);
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
+  const [mapReadings, setMapReadings] = useState<MapReading[]>([]);
+  const [hasLiveDataError, setHasLiveDataError] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 1023px)");
+    const apply = () => setIsMobileViewport(media.matches);
+
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport) return;
+    setIsDeviceModalOpen(false);
+    setSelectedDevice(null);
+  }, [isMobileViewport]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let isActive = true;
+    const pollMs = 5000;
+
+    const fetchLiveReadings = async () => {
+      try {
+        const response = await fetch("/api/v1/sensor-data?public=1&limit=400", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed with status ${response.status}`);
+        }
+
+        const payload = (await response.json()) as LiveSensorApiResponse;
+        if (!isActive) return;
+
+        const normalized = Array.isArray(payload.readings)
+          ? payload.readings.filter(
+              (reading) =>
+                typeof reading.sensorId === "string"
+                && typeof reading.location === "string"
+                && Number.isFinite(reading.value),
+            )
+          : [];
+
+        setMapReadings(normalized);
+        setHasLiveDataError(false);
+      } catch (error) {
+        if (!isActive) return;
+        console.error("Failed to fetch live map readings:", error);
+        setHasLiveDataError(true);
+      }
+    };
+
+    void fetchLiveReadings();
+    const intervalId = window.setInterval(() => {
+      void fetchLiveReadings();
+    }, pollMs);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void fetchLiveReadings();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   const deviceSummaries = useMemo(() => {
     const bySensor = new Map<string, MapReading[]>();
 
-    for (const reading of almatyReadings) {
+    for (const reading of mapReadings) {
       const current = bySensor.get(reading.sensorId) ?? [];
       bySensor.set(reading.sensorId, [...current, reading]);
     }
@@ -135,11 +209,11 @@ export function HomePage({
         };
       })
       .sort((a, b) => b.latestAqi - a.latestAqi);
-  }, []);
+  }, [mapReadings]);
 
   const benchmarkComparisons = useMemo(() => {
-    const pm25Average = averageMetric(almatyReadings, "pm25");
-    const pm10Average = averageMetric(almatyReadings, "pm10");
+    const pm25Average = averageMetric(mapReadings, "pm25");
+    const pm10Average = averageMetric(mapReadings, "pm10");
 
     return AIR_QUALITY_BENCHMARKS
       .filter((item) => item.averagingPeriod === "24-hour mean" && (item.pollutant === "PM2.5" || item.pollutant === "PM10"))
@@ -155,7 +229,7 @@ export function HomePage({
           delta,
         };
       });
-  }, []);
+  }, [mapReadings]);
 
   return (
     <div className="relative overflow-x-hidden bg-[#02050d] text-zinc-100">
@@ -195,7 +269,7 @@ export function HomePage({
       <div className="relative z-20 pb-8 sm:pb-10 lg:pb-12">
         <HeroSection
           session={session}
-          mapReadings={almatyReadings}
+          mapReadings={mapReadings}
           dict={{ hero: dict.hero }}
         />
 
@@ -210,6 +284,9 @@ export function HomePage({
                 <p className="mt-2 max-w-3xl text-sm text-slate-300">
                   Select any device to open a full sensor data popup with all available readings in one view.
                 </p>
+                {hasLiveDataError ? (
+                  <p className="mt-2 text-xs text-rose-300">Live device stream is temporarily unavailable. Retrying...</p>
+                ) : null}
               </div>
             </div>
 
@@ -218,7 +295,9 @@ export function HomePage({
                 <button
                   key={device.sensorId}
                   type="button"
+                  disabled={isMobileViewport}
                   onClick={() => {
+                    if (isMobileViewport) return;
                     setSelectedDevice({
                       location: device.location,
                       avgValue: device.avgAqi,
@@ -229,7 +308,11 @@ export function HomePage({
                     });
                     setIsDeviceModalOpen(true);
                   }}
-                  className="rounded-xl border border-slate-700/70 bg-slate-950/60 p-3 text-left transition hover:border-cyan-400/40 hover:bg-slate-950/80"
+                  className={
+                    isMobileViewport
+                      ? "rounded-xl border border-slate-700/70 bg-slate-950/40 p-3 text-left opacity-75"
+                      : "rounded-xl border border-slate-700/70 bg-slate-950/60 p-3 text-left transition hover:border-cyan-400/40 hover:bg-slate-950/80"
+                  }
                 >
                   <p className="truncate text-sm font-semibold text-zinc-100">{device.sensorId}</p>
                   <p className="mt-1 truncate text-xs text-slate-400">{device.location}</p>
@@ -250,6 +333,9 @@ export function HomePage({
                 </button>
               ))}
             </div>
+            {isMobileViewport ? (
+              <p className="mt-3 text-xs text-slate-400">Device details are available on desktop.</p>
+            ) : null}
           </div>
         </section>
 
@@ -389,11 +475,13 @@ export function HomePage({
         </div>
       </footer>
 
-      <DeviceDetailModal
-        open={isDeviceModalOpen}
-        onOpenChange={setIsDeviceModalOpen}
-        details={selectedDevice}
-      />
+      {!isMobileViewport ? (
+        <DeviceDetailModal
+          open={isDeviceModalOpen}
+          onOpenChange={setIsDeviceModalOpen}
+          details={selectedDevice}
+        />
+      ) : null}
 
     </div>
   );
