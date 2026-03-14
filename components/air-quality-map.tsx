@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { DeviceDetailModal, type DeviceDetails } from "@/components/device-detail-modal";
 import { LanguageSwitcherCompact } from "@/components/language-switcher";
 import type { RouteGeometryResponse, RouteStep } from "@/types/route";
+import { ALMATY_CENTER, isValidAlmatyCoordinate, parseCoordinatePair } from "@/lib/geo";
 
 export type MapReading = {
   location?: string | null;
@@ -36,7 +37,7 @@ const AQI_BREAKPOINTS = [
   { key: "hazardous" as AqiKey, limit: Infinity, color: "#7e22ce", range: "300+" },
 ] as const;
 
-const DEFAULT_CENTER: LatLngTuple = [37.0902, -95.7129];
+const DEFAULT_CENTER: LatLngTuple = [ALMATY_CENTER[0], ALMATY_CENTER[1]];
 
 const MAP_TEXT: Record<
   "en" | "ru" | "kz",
@@ -214,15 +215,9 @@ function haversineDistanceKm(from: LatLngTuple, to: LatLngTuple) {
 }
 
 function parseLocation(location?: string | null): LatLngTuple | null {
-  if (!location) return null;
-  const [latStr, lngStr] = location.split(",").map((part) => part.trim());
-  const lat = Number(latStr);
-  const lng = Number(lngStr);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-
-  return [lat, lng];
+  const parsed = parseCoordinatePair(location);
+  if (!parsed) return null;
+  return [parsed.latitude, parsed.longitude];
 }
 
 type AggregatedPoint = {
@@ -302,23 +297,23 @@ function createNumericIcon(value: number, color: string) {
     className: "aqi-number-icon",
     html: `
       <div style="
-        width: 28px;
-        height: 28px;
+        width: 40px;
+        height: 40px;
         border-radius: 9999px;
         background: ${color};
-        border: 2px solid rgba(15, 23, 42, 0.9);
+        border: 3px solid rgba(15, 23, 42, 0.9);
         color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         line-height: 1;
       ">${Math.round(value)}</div>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
   });
 }
 
@@ -446,6 +441,10 @@ export function AirQualityMap({
   const [routeSteps, setRouteSteps] = useState<RouteStep[]>([]);
   const [isRouting, setIsRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
   const [selectedDevice, setSelectedDevice] = useState<DeviceDetails | null>(null);
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const routeRequestMetaRef = useRef<{
@@ -465,8 +464,37 @@ export function AirQualityMap({
       (acc, point) => [acc[0] + point.coords[0], acc[1] + point.coords[1]],
       [0, 0],
     );
-    return [latSum / points.length, lngSum / points.length];
+    const centerPoint: LatLngTuple = [latSum / points.length, lngSum / points.length];
+    if (!isValidAlmatyCoordinate(centerPoint[0], centerPoint[1])) {
+      console.warn("[MapData] Computed map center out of Almaty bounds, using default center", {
+        latitude: centerPoint[0],
+        longitude: centerPoint[1],
+      });
+      return DEFAULT_CENTER;
+    }
+    return centerPoint;
   }, [points]);
+
+  const deviceDetailsEnabled = !isMobileViewport;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 1023px)");
+    const apply = () => {
+      setIsMobileViewport(media.matches);
+    };
+
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (deviceDetailsEnabled) return;
+    setIsDeviceModalOpen(false);
+    setSelectedDevice(null);
+  }, [deviceDetailsEnabled]);
 
   useEffect(() => {
     if (!useUserLocation) {
@@ -483,7 +511,21 @@ export function AirQualityMap({
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
+
+        if (!isValidAlmatyCoordinate(latitude, longitude)) {
+          console.warn("[MapData] User location outside Almaty bounds, skipping location features", {
+            latitude,
+            longitude,
+          });
+          setUserLocation(null);
+          setRouteError(text.routeUnavailable);
+          setIsLocating(false);
+          return;
+        }
+
+        setUserLocation([latitude, longitude]);
         setIsLocating(false);
       },
       () => {
@@ -491,7 +533,7 @@ export function AirQualityMap({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
-  }, [recenterRequestId, useUserLocation]);
+  }, [recenterRequestId, text.routeUnavailable, useUserLocation]);
 
   useEffect(() => {
     if (!routeDestination || !useUserLocation || !userLocation) {
@@ -681,6 +723,8 @@ export function AirQualityMap({
   const activeGuidanceArrow: GuidanceArrowKind = showTurnArrow ? nextArrowKind : "straight";
   const stepDistanceLabel = `${Math.max(0, Math.round(nextStepDistanceMeters ?? 0))} ${text.metersAway}`;
   const showNearbyStatusCard = showUserStatus && !showUserStatusAsPopover;
+  const showNearbyStatusDesktopCard = showNearbyStatusCard && !isMobileViewport;
+  const showNearbyStatusInlineCard = showNearbyStatusCard && isMobileViewport;
   const stackTopClass = showLanguageToggle
     ? "top-20"
     : showUserStatusAsPopover
@@ -715,9 +759,21 @@ export function AirQualityMap({
           </div>
         ) : null}
 
+        {showNearbyStatusDesktopCard ? (
+          <div className="absolute left-3 top-3 z-[500] max-w-[min(26rem,62vw)] rounded-xl border border-slate-700/90 bg-slate-950/95 px-4 py-3 shadow-xl backdrop-blur">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400">{text.nearbyAqi}</p>
+            <p
+              className={cn("mt-1 text-sm", useUserLocation && nearestAqi ? "font-semibold" : "text-slate-300")}
+              style={useUserLocation && nearestAqi ? { color: nearestAqi.color } : undefined}
+            >
+              {statusValueText}
+            </p>
+          </div>
+        ) : null}
+
         {(showNearbyStatusCard || (routeDestination && routeGeometry && routeGeometry.length > 1)) ? (
           <div className={cn("absolute right-3 z-[500] flex flex-col items-end gap-2", stackTopClass)}>
-            {showNearbyStatusCard ? (
+            {showNearbyStatusInlineCard ? (
               <div className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 shadow-lg">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400">{text.nearbyAqi}</p>
                 <p
@@ -792,6 +848,10 @@ export function AirQualityMap({
                   icon={createNumericIcon(point.avgValue, aqi.color)}
                   eventHandlers={{
                     click: () => {
+                      if (!deviceDetailsEnabled) {
+                        return;
+                      }
+
                       const sortedReadings = [...point.readings].sort((a, b) => {
                         const aTs = normalizeTimestamp(a.timestamp);
                         const bTs = normalizeTimestamp(b.timestamp);
@@ -819,7 +879,9 @@ export function AirQualityMap({
                       <p>{text.avg}: {point.avgValue.toFixed(1)}</p>
                       <p>{text.latest}: {point.latestValue.toFixed(1)}</p>
                       <p>{text.samples}: {point.count}</p>
-                      <p className="pt-1 text-[11px] text-slate-500">Click marker for full device data</p>
+                      {deviceDetailsEnabled ? (
+                        <p className="pt-1 text-[11px] text-slate-500">Click marker for full device data</p>
+                      ) : null}
                     </div>
                   </Popup>
                 </Marker>
@@ -836,11 +898,13 @@ export function AirQualityMap({
           </MapContainer>
         </div>
       </div>
-      <DeviceDetailModal
-        open={isDeviceModalOpen}
-        onOpenChange={setIsDeviceModalOpen}
-        details={selectedDevice}
-      />
+      {deviceDetailsEnabled ? (
+        <DeviceDetailModal
+          open={isDeviceModalOpen}
+          onOpenChange={setIsDeviceModalOpen}
+          details={selectedDevice}
+        />
+      ) : null}
     </>
   );
 }
