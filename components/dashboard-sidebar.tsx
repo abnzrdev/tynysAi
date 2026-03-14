@@ -202,7 +202,7 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 hidden transform border-r border-slate-700 bg-slate-950 text-slate-100 transition-all duration-300 lg:block",
+          "fixed inset-y-0 left-0 z-50 hidden transform border-r border-slate-700 bg-slate-950 text-slate-100 transition-[width] duration-300 lg:block",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
@@ -211,7 +211,10 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
         <Button
           variant="secondary"
           size="icon"
-          className="absolute -right-4 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900 text-slate-100 shadow-lg hover:bg-slate-800"
+          className={cn(
+            "absolute top-4 z-10 h-8 w-8 rounded-full border border-slate-700 bg-slate-900 text-slate-100 shadow-lg hover:bg-slate-800",
+            isCollapsed ? "right-2" : "right-3"
+          )}
           onClick={() => setIsCollapsed((prev) => !prev)}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
