@@ -36,7 +36,7 @@ export function HowItWorks({ dict }: { dict: Dictionary }) {
             {heading}
           </motion.h2>
           <p className="mt-3 max-w-2xl text-sm text-slate-300">
-            From sensing to action in minutes, with field-validated hardware and prediction.
+            From sensing to action in minutes.
           </p>
         </div>
 

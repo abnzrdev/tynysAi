@@ -1,0 +1,27 @@
+<svg width="1080" height="720" viewBox="0 0 1080 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1080" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#031320"/>
+      <stop offset="1" stop-color="#102A43"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="720" rx="24" fill="url(#b)"/>
+  <rect x="120" y="80" width="320" height="560" rx="36" fill="#020617" stroke="#334155" stroke-width="8"/>
+  <rect x="145" y="125" width="270" height="450" rx="20" fill="#0F172A"/>
+  <rect x="170" y="160" width="220" height="22" rx="11" fill="#22D3EE" fill-opacity="0.65"/>
+  <rect x="170" y="205" width="220" height="90" rx="14" fill="#1E293B"/>
+  <rect x="170" y="315" width="220" height="90" rx="14" fill="#1E293B"/>
+  <rect x="170" y="425" width="220" height="90" rx="14" fill="#1E293B"/>
+  <circle cx="280" cy="605" r="16" fill="#334155"/>
+
+  <rect x="520" y="120" width="430" height="90" rx="16" fill="#0F172A" stroke="#334155"/>
+  <text x="550" y="174" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="34" font-weight="700">Desktop + Tablet + Mobile</text>
+
+  <rect x="520" y="250" width="430" height="300" rx="20" fill="#020617" stroke="#0EA5E9"/>
+  <path d="M560 485C620 430 675 390 740 408C805 426 840 500 910 480" stroke="#22D3EE" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="620" cy="430" r="14" fill="#22D3EE"/>
+  <circle cx="740" cy="408" r="14" fill="#38BDF8"/>
+  <circle cx="910" cy="480" r="14" fill="#60A5FA"/>
+
+  <text x="550" y="610" fill="#94A3B8" font-family="Arial, sans-serif" font-size="26">Optimized layout for most devices</text>
+</svg>

@@ -7,7 +7,6 @@ import Link from "next/link";
 import { Navbar } from "@/components/navbar";
 import { HeroSection } from "@/components/HeroSection";
 import HowItWorks from "@/components/how-it-works";
-import { DeviceDetailModal, type DeviceDetails } from "@/components/device-detail-modal";
 import { type Locale } from "@/lib/i18n/config";
 import type { Session } from "next-auth";
 import type { MapReading } from "@/components/air-quality-map";
@@ -62,6 +61,11 @@ type Dictionary = {
     send: string;
     sending: string;
   };
+  crossPlatform?: {
+    badge: string;
+    title: string;
+    description: string;
+  };
   [key: string]: Record<string, string> | string | undefined;
 };
 
@@ -95,31 +99,7 @@ export function HomePage({
   lang: Locale;
   session: Session | null;
 }) {
-  const [selectedDevice, setSelectedDevice] = useState<DeviceDetails | null>(null);
-  const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [mapReadings, setMapReadings] = useState<MapReading[]>([]);
-  const [hasLiveDataError, setHasLiveDataError] = useState(false);
-  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 1023px)").matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const media = window.matchMedia("(max-width: 1023px)");
-    const apply = () => setIsMobileViewport(media.matches);
-
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
-
-  useEffect(() => {
-    if (!isMobileViewport) return;
-    setIsDeviceModalOpen(false);
-    setSelectedDevice(null);
-  }, [isMobileViewport]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -151,11 +131,9 @@ export function HomePage({
           : [];
 
         setMapReadings(normalized);
-        setHasLiveDataError(false);
       } catch (error) {
         if (!isActive) return;
         console.error("Failed to fetch live map readings:", error);
-        setHasLiveDataError(true);
       }
     };
 
@@ -178,38 +156,6 @@ export function HomePage({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
-
-  const deviceSummaries = useMemo(() => {
-    const bySensor = new Map<string, MapReading[]>();
-
-    for (const reading of mapReadings) {
-      const current = bySensor.get(reading.sensorId) ?? [];
-      bySensor.set(reading.sensorId, [...current, reading]);
-    }
-
-    return Array.from(bySensor.entries())
-      .map(([sensorId, sensorReadings]) => {
-        const sortedReadings = [...sensorReadings].sort((a, b) => {
-          const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return bTime - aTime;
-        });
-
-        const latest = sortedReadings[0];
-        const avgAqi =
-          sensorReadings.reduce((acc, item) => acc + item.value, 0) / Math.max(sensorReadings.length, 1);
-
-        return {
-          sensorId,
-          sampleCount: sensorReadings.length,
-          latestAqi: latest?.value ?? avgAqi,
-          avgAqi,
-          location: latest?.location ?? "Unknown",
-          readings: sortedReadings,
-        };
-      })
-      .sort((a, b) => b.latestAqi - a.latestAqi);
-  }, [mapReadings]);
 
   const benchmarkComparisons = useMemo(() => {
     const pm25Average = averageMetric(mapReadings, "pm25");
@@ -269,7 +215,6 @@ export function HomePage({
       <div className="relative z-20 pb-8 sm:pb-10 lg:pb-12">
         <HeroSection
           session={session}
-          mapReadings={mapReadings}
           dict={{ hero: dict.hero }}
         />
 
@@ -277,65 +222,31 @@ export function HomePage({
 
         <section className="relative z-20 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-7xl rounded-3xl border border-cyan-400/20 bg-slate-900/60 p-5 md:p-6">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">Devices</p>
-                <h3 className="mt-1 text-xl font-semibold text-zinc-100 md:text-2xl">Device explorer</h3>
-                <p className="mt-2 max-w-3xl text-sm text-slate-300">
-                  Select any device to open a full sensor data popup with all available readings in one view.
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">
+                  {dict.crossPlatform?.badge ?? "Cross platform"}
                 </p>
-                {hasLiveDataError ? (
-                  <p className="mt-2 text-xs text-rose-300">Live device stream is temporarily unavailable. Retrying...</p>
-                ) : null}
+                <h3 className="mt-1 text-xl font-semibold text-zinc-100 md:text-2xl">
+                  {dict.crossPlatform?.title ?? "Works across most devices"}
+                </h3>
+                <p className="mt-2 max-w-3xl text-sm text-slate-300">
+                  {dict.crossPlatform?.description
+                    ?? "Monitor routes on desktop, review trends on tablet, and check quick updates on mobile."}
+                </p>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/60">
+                <div className="relative h-[210px] sm:h-[240px]">
+                  <Image
+                    src="/media/mobile-cross-platform-placeholder.svg"
+                    alt="Phone dashboard preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 40vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {deviceSummaries.map((device) => (
-                <button
-                  key={device.sensorId}
-                  type="button"
-                  disabled={isMobileViewport}
-                  onClick={() => {
-                    if (isMobileViewport) return;
-                    setSelectedDevice({
-                      location: device.location,
-                      avgValue: device.avgAqi,
-                      latestValue: device.latestAqi,
-                      sampleCount: device.sampleCount,
-                      sensorIds: [device.sensorId],
-                      readings: device.readings,
-                    });
-                    setIsDeviceModalOpen(true);
-                  }}
-                  className={
-                    isMobileViewport
-                      ? "rounded-xl border border-slate-700/70 bg-slate-950/40 p-3 text-left opacity-75"
-                      : "rounded-xl border border-slate-700/70 bg-slate-950/60 p-3 text-left transition hover:border-cyan-400/40 hover:bg-slate-950/80"
-                  }
-                >
-                  <p className="truncate text-sm font-semibold text-zinc-100">{device.sensorId}</p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{device.location}</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Latest AQI</p>
-                      <p className="font-mono text-sm text-zinc-100">{device.latestAqi.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Avg AQI</p>
-                      <p className="font-mono text-sm text-zinc-100">{device.avgAqi.toFixed(1)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.08em] text-slate-500">Samples</p>
-                      <p className="font-mono text-sm text-zinc-100">{device.sampleCount}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            {isMobileViewport ? (
-              <p className="mt-3 text-xs text-slate-400">Device details are available on desktop.</p>
-            ) : null}
           </div>
         </section>
 
@@ -458,7 +369,7 @@ export function HomePage({
           </div>
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Contact</h3>
-            <p className="text-sm">demo@tynysai.com</p>
+            <p className="text-sm">help@tynysai.kz</p>
             <p className="text-sm">Almaty, Kazakhstan</p>
           </div>
           <div>
@@ -474,14 +385,6 @@ export function HomePage({
           <div className="text-center">© {new Date().getFullYear()} Tynys. {dict.footer.copyright}</div>
         </div>
       </footer>
-
-      {!isMobileViewport ? (
-        <DeviceDetailModal
-          open={isDeviceModalOpen}
-          onOpenChange={setIsDeviceModalOpen}
-          details={selectedDevice}
-        />
-      ) : null}
 
     </div>
   );

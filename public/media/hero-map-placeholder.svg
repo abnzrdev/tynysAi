@@ -1,0 +1,38 @@
+<svg width="1600" height="960" viewBox="0 0 1600 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#041622"/>
+      <stop offset="1" stop-color="#0B2340"/>
+    </linearGradient>
+    <linearGradient id="route" x1="180" y1="160" x2="1320" y2="820" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22D3EE" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#3B82F6" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="960" fill="url(#bg)"/>
+  <g opacity="0.35" stroke="#0EA5E9" stroke-width="1">
+    <path d="M80 120H1520"/>
+    <path d="M80 240H1520"/>
+    <path d="M80 360H1520"/>
+    <path d="M80 480H1520"/>
+    <path d="M80 600H1520"/>
+    <path d="M80 720H1520"/>
+    <path d="M80 840H1520"/>
+    <path d="M200 80V900"/>
+    <path d="M420 80V900"/>
+    <path d="M640 80V900"/>
+    <path d="M860 80V900"/>
+    <path d="M1080 80V900"/>
+    <path d="M1300 80V900"/>
+  </g>
+  <path d="M220 740C330 640 420 590 530 610C650 632 690 730 820 700C960 667 980 480 1160 460C1275 448 1360 520 1420 600" stroke="url(#route)" stroke-width="14" stroke-linecap="round"/>
+  <g>
+    <circle cx="330" cy="655" r="20" fill="#22D3EE" fill-opacity="0.9"/>
+    <circle cx="530" cy="610" r="24" fill="#38BDF8" fill-opacity="0.9"/>
+    <circle cx="820" cy="700" r="26" fill="#60A5FA" fill-opacity="0.9"/>
+    <circle cx="1040" cy="520" r="22" fill="#93C5FD" fill-opacity="0.9"/>
+    <circle cx="1320" cy="540" r="18" fill="#67E8F9" fill-opacity="0.9"/>
+  </g>
+  <rect x="112" y="96" width="290" height="72" rx="12" fill="#020617" fill-opacity="0.7" stroke="#0EA5E9"/>
+  <text x="136" y="140" fill="#E2E8F0" font-family="Arial, sans-serif" font-size="28" font-weight="700">Static Route Preview</text>
+</svg>

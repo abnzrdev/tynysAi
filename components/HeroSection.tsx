@@ -1,29 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
+import Image from "next/image";
 import type { Session } from "next-auth";
-import type { MapReading } from "@/components/air-quality-map";
-
-type AirQualityMapProps = {
-  readings: MapReading[];
-  emptyStateText: string;
-  heightClass?: string;
-  className?: string;
-  showLegend?: boolean;
-};
-
-const AirQualityMap = dynamic<AirQualityMapProps>(
-  () => import("@/components/air-quality-map").then((mod) => mod.AirQualityMap),
-  {
-    ssr: false,
-    loading: () => <div className="h-[320px] animate-pulse bg-slate-900/70 sm:h-[380px] lg:h-[460px]" />,
-  },
-);
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 type HeroSectionProps = {
   session: Session | null;
-  mapReadings: MapReading[];
   dict: {
     hero: {
       badge: string;
@@ -37,7 +30,20 @@ type HeroSectionProps = {
   };
 };
 
-export function HeroSection({ session, mapReadings, dict }: HeroSectionProps) {
+export function HeroSection({ session, dict }: HeroSectionProps) {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const [demoMessage, setDemoMessage] = useState("");
+
+  const sendDemoRequest = () => {
+    const subject = encodeURIComponent("TynysAi Demo Request");
+    const body = encodeURIComponent(
+      `Hello TynysAi team,%0D%0A%0D%0A${demoMessage.trim() || "I would like to request a demo."}%0D%0A%0D%0AThanks.`,
+    );
+    window.location.href = `mailto:help@tynysai.kz?subject=${subject}&body=${body}`;
+    setIsDemoOpen(false);
+    setDemoMessage("");
+  };
+
   return (
     <section className="relative z-20 px-4 pb-8 pt-20 sm:px-6 sm:pb-10 sm:pt-24 lg:px-8 lg:pb-12 lg:pt-28" id="hero">
       <div className="mx-auto grid min-h-[calc(100svh-5rem)] w-full max-w-7xl content-center gap-8 sm:min-h-[calc(100dvh-5.5rem)] lg:min-h-[calc(100dvh-6rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-10">
@@ -73,6 +79,27 @@ export function HeroSection({ session, mapReadings, dict }: HeroSectionProps) {
           </motion.p>
 
           <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+            className="mt-5 flex flex-wrap gap-3"
+          >
+            <Button
+              type="button"
+              onClick={() => setIsDemoOpen(true)}
+              className="bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+            >
+              Request a demo
+            </Button>
+            <a
+              href="#how-it-works"
+              className="inline-flex items-center rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-slate-800"
+            >
+              {dict.hero.learnMore}
+            </a>
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
@@ -102,16 +129,48 @@ export function HeroSection({ session, mapReadings, dict }: HeroSectionProps) {
           className="rounded-3xl border border-slate-700 bg-slate-950 p-2 shadow-2xl"
         >
           <div className="overflow-hidden rounded-2xl border border-slate-800/80">
-            <AirQualityMap
-              readings={mapReadings}
-              emptyStateText="No geocoded route data yet."
-              heightClass="h-[260px] sm:h-[330px] md:h-[380px] lg:h-[460px]"
-              className="rounded-none border-0"
-              showLegend={false}
-            />
+            <div className="relative h-[260px] sm:h-[330px] md:h-[380px] lg:h-[460px]">
+              <Image
+                src="/media/hero-map-placeholder.svg"
+                alt="Air quality route map preview"
+                fill
+                sizes="(max-width: 1024px) 100vw, 55vw"
+                className="object-cover"
+                priority
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/45 to-transparent p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-200">Live dashboard preview</p>
+                <p className="mt-1 text-sm text-slate-200">Static hero image shown when live geocoded data is unavailable.</p>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
+
+      <Dialog open={isDemoOpen} onOpenChange={setIsDemoOpen}>
+        <DialogContent className="border-slate-700 bg-slate-950 text-slate-100">
+          <DialogHeader>
+            <DialogTitle>Request a demo</DialogTitle>
+            <DialogDescription className="text-slate-300">
+              Share a short message and we will draft an email to help@tynysai.kz.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={demoMessage}
+            onChange={(event) => setDemoMessage(event.target.value)}
+            placeholder="Tell us about your fleet size, city, and timeline."
+            className="min-h-[140px] border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-400"
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsDemoOpen(false)} className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800">
+              Cancel
+            </Button>
+            <Button type="button" onClick={sendDemoRequest} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">
+              Send email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
