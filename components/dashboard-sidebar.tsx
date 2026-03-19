@@ -2,18 +2,33 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { i18n } from "@/lib/i18n/config";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  CircleHelp,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Route,
   Search,
+  Settings,
   TrendingUp,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,9 +52,27 @@ const AQI_SIDEBAR_LABELS = [
 ] as const;
 
 export function DashboardSidebar({ children }: DashboardSidebarProps) {
+  const pathname = usePathname();
+  const { data: session } = useSession();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [activeAction, setActiveAction] = useState<SidebarAction>("route");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const currentLocale = pathname?.split("/")[1] ?? "";
+  const locale = (i18n.locales as readonly string[]).includes(currentLocale) ? currentLocale : i18n.defaultLocale;
+  const profileLink = `/${locale}/dashboard`;
+  const helpLink = `/${locale}/request-demo`;
+
+  const accountInitials = (() => {
+    const source = session?.user?.name ?? session?.user?.email ?? "User";
+    return source
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  })();
 
   const handleSignOut = () => {
     let callbackUrl = '/';
@@ -183,16 +216,55 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
             </div>
           </div>
         ) : null}
-        <button
-          onClick={handleSignOut}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-base font-semibold text-red-400 transition-colors hover:bg-red-900/40",
-            isCollapsed && "justify-center"
-          )}
-        >
-          <LogOut className="h-5 w-5 flex-shrink-0" />
-          {!isCollapsed && <span>Sign Out</span>}
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg border border-slate-700/80 bg-slate-900 px-2 py-2 text-left transition-colors hover:bg-slate-800",
+                isCollapsed && "justify-center"
+              )}
+              aria-label="Open account menu"
+            >
+              <Avatar className="h-9 w-9 border border-slate-700 bg-slate-800 text-slate-100">
+                <AvatarFallback className="bg-slate-800 text-xs font-semibold text-slate-100">
+                  {accountInitials}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed ? (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-100">Account</p>
+                  <p className="truncate text-xs text-slate-400">{session?.user?.email ?? "Signed in"}</p>
+                </div>
+              ) : null}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="right" className="w-52 border-slate-700 bg-slate-950 text-slate-100">
+            <DropdownMenuLabel className="text-slate-200">Account</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-slate-700" />
+            <DropdownMenuItem asChild>
+              <Link href={profileLink} className="cursor-pointer text-slate-100">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-slate-400">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Account settings (soon)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={helpLink} className="cursor-pointer text-slate-100">
+                <CircleHelp className="mr-2 h-4 w-4" />
+                <span>Help / Support</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-slate-700" />
+            <DropdownMenuItem className="cursor-pointer text-red-300 focus:text-red-200" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign Out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
@@ -212,8 +284,8 @@ export function DashboardSidebar({ children }: DashboardSidebarProps) {
           variant="secondary"
           size="icon"
           className={cn(
-            "absolute top-4 z-10 h-8 w-8 rounded-full border border-slate-700 bg-slate-900 text-slate-100 shadow-lg hover:bg-slate-800",
-            isCollapsed ? "right-2" : "right-3"
+            "absolute top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900 text-slate-100 shadow-lg hover:bg-slate-800",
+            isCollapsed ? "right-[-12px]" : "right-[-14px]"
           )}
           onClick={() => setIsCollapsed((prev) => !prev)}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
