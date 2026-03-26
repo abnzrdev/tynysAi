@@ -102,7 +102,7 @@
     "historicalAnalytics": "Historical Analytics",
     "geoOverview": "Air Quality Map",
     "geoDescription": "Aggregated by coordinates and colored by PM2.5/AQI ranges",
-    "noGeocodedData": "No geocoded data yet. Use 'lat,lng' in the location field to plot points.",
+    "noGeocodedData": "No device connected yet. Connect a device to see live air quality data.",
     "recentIotData": "Recent IoT Data",
     "latestDataIngestion": "Latest data ingestion activity",
     "noRecentActivity": "No recent activity. Start sending IoT data to see it here.",
