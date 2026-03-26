@@ -4,25 +4,195 @@ import {
   generateDataHash,
   type SensorReadingPayload 
 } from '@/lib/sensor-validation';
-import { getSession } from '@/lib/auth';
-import {
-  getUserByEmail,
-  getRecentPublicSensorReadings,
-} from '@/lib/data-access';
 import { 
   insertSensorReading,
   findOrCreateSensor,
   findOrCreateSite,
   checkDuplicateReading
 } from '@/lib/sensor-data-access';
-import { isValidAlmatyCoordinate, parseCoordinatePair } from '@/lib/geo';
+import { isValidAlmatyCoordinate } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
 
 type DeviceStatus = 'online' | 'idle' | 'offline';
+type CentralReading = {
+  device_id?: unknown;
+  site?: unknown;
+  pm1?: unknown;
+  pm25?: unknown;
+  pm10?: unknown;
+  co2?: unknown;
+  voc?: unknown;
+  temp?: unknown;
+  hum?: unknown;
+  ch2o?: unknown;
+  co?: unknown;
+  o3?: unknown;
+  no2?: unknown;
+  timestamp?: unknown;
+};
 
-function parseCoords(location?: string | null) {
-  return parseCoordinatePair(location);
+type CentralDevice = CentralReading & {
+  latitude?: unknown;
+  longitude?: unknown;
+};
+
+type ApiReading = {
+  sensorId: string;
+  location: string;
+  value: number;
+  timestamp: string;
+  transportType: null;
+  ingestedAt: string;
+  mainReadings: {
+    pm1?: number;
+    pm25?: number;
+    pm10?: number;
+    co2?: number;
+    voc?: number;
+    temperatureC?: number;
+    humidityPct?: number;
+    ch2o?: number;
+    co?: number;
+    o3?: number;
+    no2?: number;
+  };
+};
+
+type ApiDevice = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  status: DeviceStatus;
+  lastSeenAt: string;
+};
+
+const CENTRAL_DATA_BASE_URL = (process.env.CENTRAL_DATA_BASE_URL ?? 'http://data-tynys-aqserver-1:8082').replace(/\/$/, '');
+const DEVICE_COORDINATE_FALLBACKS: Record<string, { latitude: number; longitude: number }> = {
+  lab01: { latitude: 43.2221, longitude: 76.8512 },
+};
+
+function toIsoTimestamp(value: unknown): string {
+  const fallback = new Date().toISOString();
+  if (typeof value !== 'string' || value.trim() === '') return fallback;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return fallback;
+  return parsed.toISOString();
+}
+
+function toCoordinate(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function mapReadingMetrics(reading: Record<string, unknown>) {
+  const normalized = normalizeReadingFields(reading);
+  return {
+    pm1: normalized.pm1 ?? undefined,
+    pm25: normalized.pm25 ?? undefined,
+    pm10: normalized.pm10 ?? undefined,
+    co2: normalized.co2 ?? undefined,
+    voc: normalized.voc ?? undefined,
+    temperatureC: normalized.temp ?? undefined,
+    humidityPct: normalized.hum ?? undefined,
+    ch2o: normalized.ch2o ?? undefined,
+    co: normalized.co ?? undefined,
+    o3: normalized.o3 ?? undefined,
+    no2: normalized.no2 ?? undefined,
+  };
+}
+
+async function fetchCentralJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Central server request failed (${response.status}) for ${url}`);
+  }
+
+  return (await response.json()) as T;
+}
+
+function buildDeviceIndex(devices: CentralDevice[]): Map<string, { latitude: number; longitude: number; timestamp: string }> {
+  const index = new Map<string, { latitude: number; longitude: number; timestamp: string }>();
+
+  for (const device of devices) {
+    const deviceId = typeof device.device_id === 'string' ? device.device_id : null;
+    const fallbackCoords = deviceId ? DEVICE_COORDINATE_FALLBACKS[deviceId] : undefined;
+    const latitude = toCoordinate(device.latitude) ?? fallbackCoords?.latitude ?? null;
+    const longitude = toCoordinate(device.longitude) ?? fallbackCoords?.longitude ?? null;
+    if (!deviceId || latitude === null || longitude === null) continue;
+
+    index.set(deviceId, {
+      latitude,
+      longitude,
+      timestamp: toIsoTimestamp(device.timestamp),
+    });
+  }
+
+  return index;
+}
+
+function normalizeApiReadings(
+  readings: CentralReading[],
+  devicesById: Map<string, { latitude: number; longitude: number }>,
+): ApiReading[] {
+  const out: ApiReading[] = [];
+
+  for (const reading of readings) {
+    const sensorId = typeof reading.device_id === 'string' ? reading.device_id : null;
+    if (!sensorId) continue;
+
+    const coords = devicesById.get(sensorId);
+    if (!coords) continue;
+
+    const raw = reading as Record<string, unknown>;
+    const metrics = mapReadingMetrics(raw);
+    const value =
+      metrics.pm25
+      ?? metrics.pm10
+      ?? metrics.pm1
+      ?? metrics.co2
+      ?? 0;
+
+    const ts = toIsoTimestamp(reading.timestamp);
+
+    out.push({
+      sensorId,
+      location: `${coords.latitude},${coords.longitude}`,
+      value,
+      timestamp: ts,
+      transportType: null,
+      ingestedAt: ts,
+      mainReadings: metrics,
+    });
+  }
+
+  return out;
+}
+
+function normalizeApiDevices(
+  devicesById: Map<string, { latitude: number; longitude: number; timestamp: string }>,
+): ApiDevice[] {
+  return Array.from(devicesById.entries()).map(([deviceId, device]) => {
+    const lastSeenDate = new Date(device.timestamp);
+    return {
+      id: deviceId,
+      name: deviceId,
+      latitude: device.latitude,
+      longitude: device.longitude,
+      status: deriveStatus(lastSeenDate),
+      lastSeenAt: lastSeenDate.toISOString(),
+    };
+  });
 }
 
 function pickFirstNumber(source: Record<string, unknown>, keys: string[]): number | null {
@@ -124,108 +294,37 @@ function deriveStatus(lastSeenAt: Date): DeviceStatus {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const isPublicRequest = searchParams.get('public') === '1';
-    const requestedLimit = Number(searchParams.get('limit') ?? '300');
+    const requestedLimit = Number(searchParams.get('limit') ?? '100');
     const limit = Number.isFinite(requestedLimit)
-      ? Math.min(Math.max(Math.floor(requestedLimit), 1), 2000)
-      : 300;
+      ? Math.min(Math.max(Math.floor(requestedLimit), 1), 1000)
+      : 100;
 
-    const readings = isPublicRequest
-      ? await getRecentPublicSensorReadings(limit)
-      : await (async () => {
-          const session = await getSession();
+    const latest = searchParams.get('latest');
+    const deviceId = searchParams.get('device_id');
+    const includeLatest = latest === null ? !deviceId : latest === '1' || latest === 'true';
 
-          if (!session?.user?.email) {
-            throw new Error('UNAUTHORIZED');
-          }
+    const readingsUrl = new URL(`${CENTRAL_DATA_BASE_URL}/data`);
+    readingsUrl.searchParams.set('limit', String(limit));
+    if (deviceId) readingsUrl.searchParams.set('device_id', deviceId);
+    if (includeLatest) readingsUrl.searchParams.set('latest', 'true');
 
-          const user = await getUserByEmail(session.user.email);
-          if (!user) {
-            throw new Error('USER_NOT_FOUND');
-          }
+    const devicesUrl = new URL(`${CENTRAL_DATA_BASE_URL}/devices`);
+    devicesUrl.searchParams.set('limit', String(Math.max(limit, 200)));
 
-          // Authenticated widgets should reflect the same live ingest stream
-          // the public map uses, not account-seeded demo rows.
-          return getRecentPublicSensorReadings(limit);
-        })();
+    const [rawReadings, rawDevices] = await Promise.all([
+      fetchCentralJson<CentralReading[]>(readingsUrl.toString()),
+      fetchCentralJson<CentralDevice[]>(devicesUrl.toString()),
+    ]);
 
-    if (!Array.isArray(readings)) {
-      return NextResponse.json({ devices: [], readings: [] });
-    }
-    const latestByDevice = new Map<string, (typeof readings)[number]>();
+    const safeReadings = Array.isArray(rawReadings) ? rawReadings : [];
+    const safeDevices = Array.isArray(rawDevices) ? rawDevices : [];
 
-    for (const reading of readings) {
-      if (!reading.sensorId || latestByDevice.has(reading.sensorId)) {
-        continue;
-      }
-      latestByDevice.set(reading.sensorId, reading);
-    }
+    const devicesById = buildDeviceIndex(safeDevices);
+    const readings = normalizeApiReadings(safeReadings, devicesById);
+    const devices = normalizeApiDevices(devicesById);
 
-    const devices = Array.from(latestByDevice.entries())
-      .map(([deviceId, reading]) => {
-        const coords = parseCoords(reading.location);
-        if (!coords) return null;
-
-        const ingestedAt =
-          reading.ingestedAt instanceof Date ? reading.ingestedAt : new Date(reading.ingestedAt);
-
-        if (Number.isNaN(ingestedAt.getTime())) return null;
-
-        return {
-          id: deviceId,
-          name: deviceId,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          status: deriveStatus(ingestedAt),
-          lastSeenAt: ingestedAt.toISOString(),
-        };
-      })
-      .filter((device): device is NonNullable<typeof device> => device !== null);
-
-    const normalizedReadings = readings
-      .filter((reading) => Boolean(reading.sensorId) && Boolean(parseCoords(reading.location)))
-      .map((reading) => {
-        const rawReading = reading as unknown as Record<string, unknown>;
-        const normalized = normalizeReadingFields(rawReading);
-        const normalizedValue =
-          pickFirstNumber(rawReading, ['value'])
-          ?? normalized.pm25
-          ?? normalized.pm10
-          ?? normalized.pm1
-          ?? normalized.co2
-          ?? 0;
-
-        return {
-          sensorId: reading.sensorId,
-          location: reading.location,
-          value: normalizedValue,
-          timestamp: reading.timestamp,
-          mainReadings: {
-            pm1: normalized.pm1 ?? undefined,
-            pm25: normalized.pm25 ?? undefined,
-            pm10: normalized.pm10 ?? undefined,
-            co2: normalized.co2 ?? undefined,
-            voc: normalized.voc ?? undefined,
-            temperatureC: normalized.temp ?? undefined,
-            humidityPct: normalized.hum ?? undefined,
-            ch2o: normalized.ch2o ?? undefined,
-            co: normalized.co ?? undefined,
-            o3: normalized.o3 ?? undefined,
-            no2: normalized.no2 ?? undefined,
-          },
-        };
-      });
-
-    return NextResponse.json({ devices, readings: normalizedReadings });
+    return NextResponse.json({ devices, readings });
   } catch (error) {
-    if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
     console.error('Error fetching device snapshots:', error);
     return NextResponse.json(
       {

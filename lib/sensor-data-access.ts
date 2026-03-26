@@ -127,6 +127,10 @@ export async function insertSensorReading(params: {
   readings: SensorReadingPayload['readings'];
   metadata?: SensorReadingPayload['metadata'];
   dataHash: string;
+  value?: number | null;
+  location?: string | null;
+  transportType?: string | null;
+  userId?: number | null;
 }): Promise<number> {
   const [reading] = await db
     .insert(sensorReadings)
@@ -146,6 +150,10 @@ export async function insertSensorReading(params: {
       temperature: params.readings.temp ?? null,
       humidity: params.readings.hum ?? null,
       pressure: params.readings.pressure ?? null,
+      value: params.value ?? null,
+      location: params.location ?? null,
+      transportType: params.transportType ?? null,
+      userId: params.userId ?? null,
       batteryLevel: params.metadata?.battery ?? null,
       signalStrength: params.metadata?.signal ?? null,
       errorCode: params.metadata?.error_code ?? null,
