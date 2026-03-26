@@ -3,11 +3,9 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { DashboardMapPanel } from "./map-panel-client";
-import { NearbyDevicesPanel } from "@/components/nearby-devices-panel";
 import { LanguageSwitcherCompact } from "@/components/language-switcher";
-import { fetchNearbyDevices, type NearbyDevice } from "@/lib/device-api";
 import { exportSensorReportPdf } from "@/lib/utils/export-pdf";
 import type { GoodAirOption, NearestGoodAirResponse } from "@/types/route";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +18,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  Activity,
   Database,
   Download,
   Filter,
@@ -96,6 +93,7 @@ type SidebarAction = "search" | "location" | "route" | "trends";
 
 const MOBILE_LOCATION_PREF_KEY = "dashboard.mobile.location.enabled";
 const DESKTOP_LOCATION_PREF_KEY = "dashboard.desktop.location.enabled";
+const GEOLOCATION_OPTIONS = { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 } as const;
 
 const DASHBOARD_UI_TEXT: Record<
   DashboardLocale,
@@ -286,51 +284,6 @@ const DASHBOARD_UI_TEXT: Record<
   },
 };
 
-const NEARBY_DEVICES_TEXT: Record<
-  DashboardLocale,
-  {
-    title: string;
-    locating: string;
-    empty: string;
-    error: string;
-    kmAway: string;
-    online: string;
-    idle: string;
-    offline: string;
-  }
-> = {
-  en: {
-    title: "Nearby Devices",
-    locating: "Detecting your location and loading devices...",
-    empty: "No nearby devices found.",
-    error: "Location unavailable or failed to load nearby devices.",
-    kmAway: "km away",
-    online: "Online",
-    idle: "Idle",
-    offline: "Offline",
-  },
-  ru: {
-    title: "Ближайшие устройства",
-    locating: "Определяем вашу геолокацию и загружаем устройства...",
-    empty: "Рядом устройства не найдены.",
-    error: "Геолокация недоступна или не удалось загрузить ближайшие устройства.",
-    kmAway: "км",
-    online: "Онлайн",
-    idle: "Ожидание",
-    offline: "Офлайн",
-  },
-  kz: {
-    title: "Жақын құрылғылар",
-    locating: "Орналасқан жеріңіз анықталып, құрылғылар жүктелуде...",
-    empty: "Жақын маңда құрылғылар табылмады.",
-    error: "Геолокация қолжетімсіз немесе жақын құрылғыларды жүктеу мүмкін болмады.",
-    kmAway: "км",
-    online: "Онлайн",
-    idle: "Күту",
-    offline: "Офлайн",
-  },
-};
-
 function SectionHeader({ id, icon: Icon, title, className }: SectionHeaderProps) {
   return (
     <div
@@ -349,7 +302,6 @@ function SectionHeader({ id, icon: Icon, title, className }: SectionHeaderProps)
 
 export function DashboardClient({ readings, dict }: DashboardClientProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [selectedSensor, setSelectedSensor] = useState<string>("all");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [selectedTransportType, setSelectedTransportType] = useState<string>("all");
@@ -379,10 +331,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 1023px)").matches;
   });
-  const [nearbyDevices, setNearbyDevices] = useState<NearbyDevice[]>([]);
-  const [nearbyCoords, setNearbyCoords] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isNearbyLoading, setIsNearbyLoading] = useState(false);
-  const [hasNearbyError, setHasNearbyError] = useState(false);
   const { data: session } = useSession();
   const locale: DashboardLocale = pathname?.startsWith("/ru")
     ? "ru"
@@ -390,7 +338,11 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       ? "kz"
       : "en";
   const ui = DASHBOARD_UI_TEXT[locale];
-  const nearbyText = NEARBY_DEVICES_TEXT[locale];
+  const emptyMapCtaLabel = locale === "ru"
+    ? "Подключить устройство"
+    : locale === "kz"
+      ? "Құрылғыны қосу"
+      : "Connect device";
 
   const filterOptions = useMemo(() => {
     const sensors = new Set(readings.map((reading) => reading.sensorId));
@@ -553,114 +505,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     }
   }, [isDesktopLocationActive, isLocationPrefHydrated]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isMobileDevice) {
-      setIsNearbyLoading(false);
-      setHasNearbyError(false);
-      setNearbyCoords(null);
-      setNearbyDevices([]);
-      return;
-    }
-
-    if (!("geolocation" in navigator)) {
-      setHasNearbyError(true);
-      return;
-    }
-
-    let isActive = true;
-    setIsNearbyLoading(true);
-    setHasNearbyError(false);
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        if (!isActive) return;
-
-        try {
-          const coords = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          };
-          const devices = await fetchNearbyDevices(coords, 6);
-          if (!isActive) return;
-          setNearbyCoords(coords);
-          setNearbyDevices(devices);
-          setHasNearbyError(false);
-        } catch (error) {
-          if (!isActive) return;
-          console.error("Failed to load nearby devices:", error);
-          setHasNearbyError(true);
-          setNearbyDevices([]);
-        } finally {
-          if (isActive) {
-            setIsNearbyLoading(false);
-          }
-        }
-      },
-      () => {
-        if (!isActive) return;
-        setHasNearbyError(true);
-        setNearbyCoords(null);
-        setNearbyDevices([]);
-        setIsNearbyLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 },
-    );
-
-    return () => {
-      isActive = false;
-    };
-  }, [isMobileDevice]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isMobileDevice) return;
-
-    const pollMs = 5000;
-    let isActive = true;
-
-    const runPoll = async () => {
-      if (!isActive || document.visibilityState !== "visible") {
-        return;
-      }
-
-      router.refresh();
-
-      if (!nearbyCoords) {
-        return;
-      }
-
-      try {
-        const devices = await fetchNearbyDevices(nearbyCoords, 6);
-        if (!isActive) return;
-        setNearbyDevices(devices);
-        setHasNearbyError(false);
-      } catch (error) {
-        if (!isActive) return;
-        console.error("Failed to refresh nearby devices:", error);
-        setHasNearbyError(true);
-      }
-    };
-
-    const intervalId = window.setInterval(() => {
-      void runPoll();
-    }, pollMs);
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void runPoll();
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => {
-      isActive = false;
-      window.clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [isMobileDevice, nearbyCoords, router]);
-
   const handleMobileSearchOpen = () => {
     setIsMobileSearchDialogOpen(true);
   };
@@ -674,15 +518,25 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
 
     setIsMobileLocationPending(true);
     navigator.geolocation.getCurrentPosition(
-      () => {
+      (position) => {
+        console.info("[GeoLocation] mobile-toggle", {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+          ageSeconds: Math.max(0, Math.round((Date.now() - position.timestamp) / 1000)),
+        });
         setIsMobileLocationActive(true);
         setMobileRecenterRequestId((current) => current + 1);
         setIsMobileLocationPending(false);
       },
-      () => {
+      (geoError) => {
+        console.warn("[GeoLocation] mobile-toggle:error", {
+          code: geoError.code,
+          message: geoError.message,
+        });
         setIsMobileLocationPending(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
+      GEOLOCATION_OPTIONS,
     );
   };
 
@@ -704,7 +558,12 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        console.info("[RouteDebug] loadRouteOptions:position", { lat, lng });
+        console.info("[RouteDebug] loadRouteOptions:position", {
+          lat,
+          lng,
+          accuracyMeters: position.coords.accuracy,
+          ageSeconds: Math.max(0, Math.round((Date.now() - position.timestamp) / 1000)),
+        });
 
         try {
           const response = await fetch(`/api/v1/nearest-good-air?lat=${lat}&lng=${lng}`, {
@@ -754,7 +613,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         setRouteOptionsError(ui.routeLoadError);
         setIsRouteOptionsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 },
+      GEOLOCATION_OPTIONS,
     );
   }, [isMobileDevice, ui.routeLoadError, ui.routeNoOptions]);
 
@@ -795,14 +654,24 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
     }
 
     navigator.geolocation.getCurrentPosition(
-      () => {
+      (position) => {
+        console.info("[GeoLocation] desktop-recenter", {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracyMeters: position.coords.accuracy,
+          ageSeconds: Math.max(0, Math.round((Date.now() - position.timestamp) / 1000)),
+        });
         setIsDesktopLocationActive(true);
         setDesktopRecenterRequestId((current) => current + 1);
       },
-      () => {
+      (geoError) => {
+        console.warn("[GeoLocation] desktop-recenter:error", {
+          code: geoError.code,
+          message: geoError.message,
+        });
         setIsDesktopLocationActive(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 }
+      GEOLOCATION_OPTIONS,
     );
   }, []);
 
@@ -866,14 +735,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
       window.removeEventListener("dashboard:search", onSearch as EventListener);
     };
   }, [handleDesktopRecenter, handleRouteAction]);
-
-  const mobileNearbyPlaceText = useMemo(() => {
-    if (isNearbyLoading) return ui.locating;
-    if (hasNearbyError) return ui.unavailable;
-    if (!nearbyDevices.length) return ui.unavailable;
-    const nearest = nearbyDevices[0];
-    return `${nearest.name} · ${nearest.distanceKm.toFixed(1)} ${nearbyText.kmAway}`;
-  }, [hasNearbyError, isNearbyLoading, nearbyDevices, nearbyText.kmAway, ui.locating, ui.unavailable]);
 
   const statNumbers = useMemo(() => {
     const values = filteredReadings.map((r) => r.value);
@@ -1122,7 +983,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
               >
                 <p className="truncate text-sm font-semibold text-slate-100">{option.label}</p>
                 <p className="mt-1 text-xs text-slate-300">
-                  {ui.routeDistance}: {option.distanceKm.toFixed(2)} {nearbyText.kmAway}
+                  {ui.routeDistance}: {option.distanceKm.toFixed(2)} km
                 </p>
                 <p className="text-xs text-slate-300">
                   {ui.routeAqi}: {Math.round(option.aqi)}
@@ -1149,6 +1010,8 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           key={`mobile-map-${mobileMapKey}`}
           readings={filteredReadings}
           emptyMapText={dict.noGeocodedData}
+          emptyMapCtaLabel={emptyMapCtaLabel}
+          emptyMapCtaHref={`/${locale}/contact`}
           recentActivity={[]}
           feedTitle={dict.recentIotData}
           feedEmptyText={dict.noRecentActivity}
@@ -1159,7 +1022,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           minimalMode
           showLegend={false}
           useUserLocation={isMobileLocationActive}
-          showUserStatus
+          showUserStatus={false}
           showUserStatusAsPopover
           showLanguageToggle={false}
           recenterRequestId={mobileRecenterRequestId}
@@ -1238,14 +1101,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
               >
                 <Search className="h-4 w-4" />
               </Button>
-              <div
-                className="h-11 min-w-[7.5rem] max-w-[8.25rem] rounded-xl border border-slate-700 bg-slate-900 px-2 py-1"
-                aria-label={ui.nearbyAqi}
-                title={mobileNearbyPlaceText}
-              >
-                <p className="text-[10px] uppercase tracking-[0.08em] text-slate-400">{ui.nearbyAqi}</p>
-                <p className="truncate text-[11px] font-semibold text-slate-100">{mobileNearbyPlaceText}</p>
-              </div>
               <Button
                 size="sm"
                 className={cn(
@@ -1408,6 +1263,8 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         key={`desktop-map-${desktopMapKey}`}
         readings={filteredReadings}
         emptyMapText={dict.noGeocodedData}
+        emptyMapCtaLabel={emptyMapCtaLabel}
+        emptyMapCtaHref={`/${locale}/contact`}
         recentActivity={[]}
         feedTitle={dict.recentIotData}
         feedEmptyText={dict.noRecentActivity}
@@ -1419,7 +1276,7 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
         showLanguageToggle
         useUserLocation={isDesktopLocationActive}
         recenterRequestId={desktopRecenterRequestId}
-        showUserStatus
+        showUserStatus={false}
         routeDestination={activeRouteDestination}
       />
 
@@ -1520,22 +1377,6 @@ export function DashboardClient({ readings, dict }: DashboardClientProps) {
           </div>
         </section>
 
-        <section id="nearby-devices" aria-labelledby="nearby-devices-heading" className="space-y-4 scroll-mt-28">
-          <div className={cn("space-y-4 p-4", overlayPanelClass)}>
-            <SectionHeader
-              id="nearby-devices-heading"
-              icon={Activity}
-              title={nearbyText.title}
-              className="mb-0 mt-0 border-border/60 pb-3"
-            />
-            <NearbyDevicesPanel
-              devices={nearbyDevices}
-              loading={isNearbyLoading}
-              error={hasNearbyError}
-              text={nearbyText}
-            />
-          </div>
-        </section>
       </div>
 
       <Dialog open={isAnalyticsDialogOpen} onOpenChange={setIsAnalyticsDialogOpen}>

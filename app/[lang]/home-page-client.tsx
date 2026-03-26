@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/navbar";
 import { HeroSection } from "@/components/HeroSection";
 import HowItWorks from "@/components/how-it-works";
+import { DashboardMapPanel } from "./dashboard/map-panel-client";
 import { type Locale } from "@/lib/i18n/config";
 import type { Session } from "next-auth";
 import type { MapReading } from "@/components/air-quality-map";
@@ -177,6 +178,9 @@ export function HomePage({
       });
   }, [mapReadings]);
 
+  const heroEmptyText = "No device connected yet. Connect a device to see live air quality data.";
+  const heroEmptyCta = "Contact setup support";
+
   return (
     <div className="relative overflow-x-hidden bg-[#02050d] text-zinc-100">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
@@ -216,6 +220,27 @@ export function HomePage({
         <HeroSection
           session={session}
           dict={{ hero: dict.hero }}
+          mapPreview={(
+            <div className="overflow-hidden rounded-2xl border border-slate-800/80">
+              <DashboardMapPanel
+                readings={mapReadings}
+                emptyMapText={heroEmptyText}
+                emptyMapCtaLabel={heroEmptyCta}
+                emptyMapCtaHref={`/${lang}/contact`}
+                recentActivity={[]}
+                feedTitle="Live Air Quality Feed"
+                feedEmptyText={heroEmptyText}
+                mapHeightClass="h-[260px] sm:h-[330px] md:h-[380px] lg:h-[460px]"
+                showFeedOverlay={false}
+                minimalMode
+                showLegend={false}
+                showLanguageToggle={false}
+                useUserLocation={false}
+                showUserStatus={false}
+                className="rounded-none"
+              />
+            </div>
+          )}
         />
 
         <HowItWorks dict={dict} />

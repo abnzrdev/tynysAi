@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 type AirQualityMapProps = {
   readings: MapReading[];
   emptyStateText: string;
+  emptyStateCtaLabel?: string;
+  emptyStateCtaHref?: string;
   heightClass?: string;
   className?: string;
   showLegend?: boolean;
@@ -33,6 +35,8 @@ const AirQualityMap = dynamic<AirQualityMapProps>(
 interface DashboardMapPanelProps {
   readings: MapReading[];
   emptyMapText: string;
+  emptyMapCtaLabel?: string;
+  emptyMapCtaHref?: string;
   recentActivity: LiveFeedItem[];
   feedTitle: string;
   feedEmptyText: string;
@@ -54,6 +58,8 @@ interface DashboardMapPanelProps {
 export function DashboardMapPanel({
   readings,
   emptyMapText,
+  emptyMapCtaLabel,
+  emptyMapCtaHref,
   recentActivity,
   feedTitle,
   feedEmptyText,
@@ -81,6 +87,8 @@ export function DashboardMapPanel({
         <AirQualityMap
           readings={readings}
           emptyStateText={emptyMapText}
+          emptyStateCtaLabel={emptyMapCtaLabel}
+          emptyStateCtaHref={emptyMapCtaHref}
           heightClass={mapHeightClass}
           className="h-full rounded-none border-0"
           showLegend={showLegend}
@@ -104,6 +112,8 @@ export function DashboardMapPanel({
         <AirQualityMap
           readings={readings}
           emptyStateText={emptyMapText}
+          emptyStateCtaLabel={emptyMapCtaLabel}
+          emptyStateCtaHref={emptyMapCtaHref}
           heightClass={mapHeightClass}
           className="h-full rounded-none border-0"
           showLegend={showLegend}
@@ -132,6 +142,8 @@ export function DashboardMapPanel({
             <AirQualityMap
               readings={readings}
               emptyStateText={emptyMapText}
+              emptyStateCtaLabel={emptyMapCtaLabel}
+              emptyStateCtaHref={emptyMapCtaHref}
               heightClass={mapHeightClass}
               className="rounded-2xl"
               showLegend={showLegend}
