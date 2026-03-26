@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
+import type { ReactNode } from "react";
 import type { Session } from "next-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 type HeroSectionProps = {
   session: Session | null;
+  mapPreview?: ReactNode;
   dict: {
     hero: {
       badge: string;
@@ -30,7 +31,7 @@ type HeroSectionProps = {
   };
 };
 
-export function HeroSection({ session, dict }: HeroSectionProps) {
+export function HeroSection({ session, dict, mapPreview }: HeroSectionProps) {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [demoMessage, setDemoMessage] = useState("");
 
@@ -128,22 +129,7 @@ export function HeroSection({ session, dict }: HeroSectionProps) {
           transition={{ duration: 0.6, delay: 0.12 }}
           className="rounded-3xl border border-slate-700 bg-slate-950 p-2 shadow-2xl"
         >
-          <div className="overflow-hidden rounded-2xl border border-slate-800/80">
-            <div className="relative h-[260px] sm:h-[330px] md:h-[380px] lg:h-[460px]">
-              <Image
-                src="/media/hero-map-placeholder.svg"
-                alt="Air quality route map preview"
-                fill
-                sizes="(max-width: 1024px) 100vw, 55vw"
-                className="object-cover"
-                priority
-              />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/45 to-transparent p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-200">Live dashboard preview</p>
-                <p className="mt-1 text-sm text-slate-200">Static hero image shown when live geocoded data is unavailable.</p>
-              </div>
-            </div>
-          </div>
+          {mapPreview}
         </motion.div>
       </div>
 

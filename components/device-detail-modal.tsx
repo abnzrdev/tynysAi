@@ -21,12 +21,29 @@ export type DeviceDetailReading = {
   value: number;
   timestamp?: string | null;
   mainReadings?: {
+    pm1?: number;
     pm25?: number;
     pm10?: number;
     co2?: number;
+    voc?: number;
     temperatureC?: number;
     humidityPct?: number;
+    ch2o?: number;
+    co?: number;
+    o3?: number;
+    no2?: number;
+    pm1_0?: number;
+    pm2_5?: number;
+    pm_10?: number;
+    PM1?: number;
+    [key: string]: number | undefined;
   };
+  pm1?: number;
+  pm25?: number;
+  pm10?: number;
+  co2?: number;
+  voc?: number;
+  [key: string]: unknown;
 };
 
 export type DeviceDetails = {
@@ -53,6 +70,26 @@ function formatTimestamp(timestamp?: string | null) {
 
 function numberOrDash(value?: number) {
   return typeof value === "number" && Number.isFinite(value) ? value.toFixed(1) : "-";
+}
+
+function resolveReadingMetric(reading: DeviceDetailReading, keys: string[]) {
+  const fromMain = reading.mainReadings as Record<string, unknown> | undefined;
+  const fromReading = reading as Record<string, unknown>;
+
+  for (const key of keys) {
+    const candidate = fromMain?.[key] ?? fromReading[key];
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    if (typeof candidate === "string" && candidate.trim() !== "") {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function sortByNewest(a: DeviceDetailReading, b: DeviceDetailReading) {
@@ -97,9 +134,9 @@ function LatestReadingsTable({ details }: { details: DeviceDetails }) {
               >
                 <TableCell className="text-xs text-slate-200">{formatTimestamp(reading.timestamp)}</TableCell>
                 <TableCell className="text-right font-mono text-xs text-zinc-100">{reading.value.toFixed(1)}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.pm25)}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.pm10)}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(reading.mainReadings?.co2)}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(resolveReadingMetric(reading, ["pm25", "pm2_5", "PM2.5", "PM25", "pm_2_5"]))}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(resolveReadingMetric(reading, ["pm10", "pm_10", "PM10"]))}</TableCell>
+                <TableCell className="text-right font-mono text-xs text-zinc-100">{numberOrDash(resolveReadingMetric(reading, ["co2", "CO2", "co_2"]))}</TableCell>
                 <TableCell className="text-xs font-medium text-zinc-100">{reading.sensorId}</TableCell>
               </TableRow>
             ))}

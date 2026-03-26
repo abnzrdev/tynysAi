@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { LatLngTuple } from "leaflet";
 import L from "leaflet";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,7 @@ const MAP_TEXT: Record<
     enableLocation: string;
     kmAway: string;
     userLocation: string;
+    locationWarning: string;
   }
 > = {
   en: {
@@ -89,6 +91,7 @@ const MAP_TEXT: Record<
     enableLocation: "Enable location to view nearest AQI",
     kmAway: "km away",
     userLocation: "Your location",
+    locationWarning: "Low GPS precision detected. Distance may be approximate.",
   },
   ru: {
     good: "Хорошо",
@@ -113,6 +116,7 @@ const MAP_TEXT: Record<
     enableLocation: "Включите геолокацию для отображения ближайшего AQI",
     kmAway: "км",
     userLocation: "Ваше местоположение",
+    locationWarning: "Низкая точность GPS. Расстояние может быть приблизительным.",
   },
   kz: {
     good: "Жақсы",
@@ -137,6 +141,7 @@ const MAP_TEXT: Record<
     enableLocation: "Жақын AQI көру үшін геолокацияны қосыңыз",
     kmAway: "км",
     userLocation: "Сіздің орныңыз",
+    locationWarning: "GPS дәлдігі төмен. Қашықтық жуық болуы мүмкін.",
   },
 };
 
@@ -407,6 +412,8 @@ function FitToMarkers({
 export function AirQualityMap({
   readings,
   emptyStateText,
+  emptyStateCtaLabel,
+  emptyStateCtaHref,
   heightClass = "h-[420px]",
   className,
   showLanguageToggle = false,
@@ -418,6 +425,8 @@ export function AirQualityMap({
 }: {
   readings: MapReading[];
   emptyStateText: string;
+  emptyStateCtaLabel?: string;
+  emptyStateCtaHref?: string;
   heightClass?: string;
   className?: string;
   showLegend?: boolean;
@@ -436,6 +445,8 @@ export function AirQualityMap({
   const points = useMemo(() => aggregatePoints(readings), [readings]);
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [userLocationAccuracyMeters, setUserLocationAccuracyMeters] = useState<number | null>(null);
+  const [userLocationAgeSeconds, setUserLocationAgeSeconds] = useState<number | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<LatLngTuple[] | null>(null);
   const [routeDistanceKm, setRouteDistanceKm] = useState<number | null>(null);
   const [routeSteps, setRouteSteps] = useState<RouteStep[]>([]);
@@ -500,6 +511,8 @@ export function AirQualityMap({
     if (!useUserLocation) {
       setUserLocation(null);
       setIsLocating(false);
+      setUserLocationAccuracyMeters(null);
+      setUserLocationAgeSeconds(null);
       return;
     }
 
@@ -526,9 +539,20 @@ export function AirQualityMap({
         }
 
         setUserLocation([latitude, longitude]);
+        setUserLocationAccuracyMeters(Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null);
+        const ageSeconds = Math.max(0, Math.round((Date.now() - pos.timestamp) / 1000));
+        setUserLocationAgeSeconds(ageSeconds);
+        console.info("[GeoLocation] user-position", {
+          latitude,
+          longitude,
+          accuracyMeters: pos.coords.accuracy,
+          ageSeconds,
+          isLowPrecision: Number.isFinite(pos.coords.accuracy) && pos.coords.accuracy > 1000,
+        });
         setIsLocating(false);
       },
       () => {
+        console.warn("[GeoLocation] unable to read browser location");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
@@ -702,6 +726,16 @@ export function AirQualityMap({
       : nearestAqi
         ? `${Math.round(nearestAqi.value)} · ${nearestAqi.label} · ${nearestAqi.distanceKm.toFixed(1)} ${text.kmAway}`
         : "-";
+  const locationWarningText = useMemo(() => {
+    if (!useUserLocation || isLocating || !userLocation) return null;
+    if (typeof userLocationAccuracyMeters === "number" && userLocationAccuracyMeters > 1000) {
+      return text.locationWarning;
+    }
+    if (typeof userLocationAgeSeconds === "number" && userLocationAgeSeconds > 60) {
+      return text.locationWarning;
+    }
+    return null;
+  }, [isLocating, text.locationWarning, useUserLocation, userLocation, userLocationAccuracyMeters, userLocationAgeSeconds]);
 
   const nextRouteStep = useMemo(() => {
     if (routeSteps.length === 0) return null;
@@ -735,11 +769,19 @@ export function AirQualityMap({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-lg border border-dashed border-slate-800/60 text-sm text-muted-foreground",
+          "flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-800/60 px-5 text-center text-sm text-muted-foreground",
           heightClass,
         )}
       >
-        {emptyStateText}
+        <p>{emptyStateText}</p>
+        {emptyStateCtaLabel && emptyStateCtaHref ? (
+          <Link
+            href={emptyStateCtaHref}
+            className="rounded-md border border-cyan-400/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-cyan-200 transition hover:bg-cyan-500/20"
+          >
+            {emptyStateCtaLabel}
+          </Link>
+        ) : null}
       </div>
     );
   }
@@ -768,6 +810,9 @@ export function AirQualityMap({
             >
               {statusValueText}
             </p>
+            {locationWarningText ? (
+              <p className="mt-1 text-[11px] text-amber-300">{locationWarningText}</p>
+            ) : null}
           </div>
         ) : null}
 
@@ -782,6 +827,9 @@ export function AirQualityMap({
                 >
                   {statusValueText}
                 </p>
+                {locationWarningText ? (
+                  <p className="mt-1 text-[10px] text-amber-300">{locationWarningText}</p>
+                ) : null}
               </div>
             ) : null}
 

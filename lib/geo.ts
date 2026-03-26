@@ -37,13 +37,30 @@ export function isValidAlmatyCoordinate(latitude: number, longitude: number): bo
 export function parseCoordinatePair(location?: string | null): Coordinates | null {
   if (!location || !location.includes(",")) return null;
 
-  const [latStr, lngStr] = location.split(",").map((part) => part.trim());
-  const latitude = Number(latStr);
-  const longitude = Number(lngStr);
+  const [firstRaw, secondRaw] = location.split(",").map((part) => part.trim());
+  const first = Number(firstRaw);
+  const second = Number(secondRaw);
 
-  if (!isValidAlmatyCoordinate(latitude, longitude)) {
+  if (!Number.isFinite(first) || !Number.isFinite(second)) {
     return null;
   }
 
-  return { latitude, longitude };
+  const asLatLngValid = isValidAlmatyCoordinate(first, second);
+  const asLngLatValid = isValidAlmatyCoordinate(second, first);
+
+  if (asLatLngValid) {
+    return { latitude: first, longitude: second };
+  }
+
+  if (asLngLatValid) {
+    console.warn("[GeoParse] Detected swapped coordinate order, auto-correcting", {
+      original: location,
+      parsedAs: "lng,lat",
+      correctedLatitude: second,
+      correctedLongitude: first,
+    });
+    return { latitude: second, longitude: first };
+  }
+
+  return null;
 }
